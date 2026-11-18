@@ -24,8 +24,8 @@ export function roundedDiscGeometry(radius, height, edge, sides) {
 }
 
 // Box with rounded corners & edges (3 bevel segments: soft but still low poly).
-export function puffy(w, h, d, radius, mat) {
-  return new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 3, edgeRadius(radius, w, h, d)), mat);
+export function puffy(w, h, d, radius, mat, segments = 3) {
+  return new THREE.Mesh(new RoundedBoxGeometry(w, h, d, segments, edgeRadius(radius, w, h, d)), mat);
 }
 
 // Low-poly cylinder between two points (bottom -> top), optionally tapered.
