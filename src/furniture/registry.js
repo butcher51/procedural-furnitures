@@ -22,3 +22,5 @@ export function list() {
 }
 
 register(chair);
+import table from './table/index.js';
+register(table);
