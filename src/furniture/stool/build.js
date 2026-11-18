@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {
   beam, endPanelShape, extrudeProfile, extrudeUp, latheSolid, normalizeUVs, puffy, roundedDiscGeometry, strut, superellipseShape, tube,
 } from '../../core/geometry.js';
+import { grainAlong } from '../../core/patterns.js';
 import { buildLegs, buildPedestal, buildStretchers, legLines } from '../../core/supports.js';
 
 const SINK = 0.001;
@@ -11,18 +12,18 @@ function seatSolid(p, { width, depth, thickness, edge, bottom, mat }) {
   if (p.seatShape === 'round') {
     const mesh = new THREE.Mesh(roundedDiscGeometry(width / 2, thickness, edge, p.seatSides), mat);
     mesh.position.y = bottom + thickness / 2;
-    return mesh;
+    return grainAlong(mesh, 'x');
   }
   if (p.seatShape === 'squircle' || p.seatShape === 'oval') {
     const bevel = Math.min(edge, thickness * 0.4);
     const outline = superellipseShape(width / 2 - bevel, depth / 2 - bevel, p.seatExponent);
     const mesh = new THREE.Mesh(normalizeUVs(extrudeUp(outline, thickness, bevel), width), mat);
     mesh.position.y = bottom;
-    return mesh;
+    return grainAlong(mesh, 'x');
   }
   const mesh = puffy(width, thickness, depth, edge, mat);
   mesh.position.y = bottom + thickness / 2;
-  return mesh;
+  return grainAlong(mesh, 'x');
 }
 
 function legObject(p) {
@@ -100,7 +101,7 @@ function buildDiner(p, mats) {
   ];
   const pan = new THREE.Mesh(roundedDiscGeometry(p.seatWidth / 2 - 0.02, p.seatThickness, Math.min(0.01, p.seatThickness * 0.4), 12), mats.pan);
   pan.position.y = legTop + p.seatThickness / 2;
-  parts.push(pan);
+  parts.push(grainAlong(pan, 'x'));
   const cushion = new THREE.Mesh(roundedDiscGeometry(p.seatWidth / 2, p.cushionThickness + SINK, p.puff, 12), mats.cushion);
   cushion.position.y = legTop + p.seatThickness - SINK + (p.cushionThickness + SINK) / 2;
   parts.push(cushion);
@@ -137,7 +138,7 @@ function buildDrum(p, mats) {
   if (p.drumBase === 'plinth') {
     const plinth = new THREE.Mesh(roundedDiscGeometry(radii.bottom * 0.85, p.plinthHeight, Math.min(0.006, p.plinthHeight * 0.3), 12), mats.frame);
     plinth.position.y = p.plinthHeight / 2;
-    parts.push(plinth);
+    parts.push(grainAlong(plinth, 'x'));
   }
   if (p.drumBase === 'feet') {
     const legs = legObject(p);
@@ -166,7 +167,7 @@ function buildSlab(p, mats) {
   const parts = [];
   const plank = puffy(p.seatWidth, p.seatThickness, p.seatDepth, p.puff, mats.pan);
   plank.position.y = p.legHeight + p.seatThickness / 2;
-  parts.push(plank);
+  parts.push(grainAlong(plank, 'x'));
 
   const outline = endPanelShape(p.seatDepth, p.legHeight, {
     cut: p.slabCutout,
@@ -178,7 +179,7 @@ function buildSlab(p, mats) {
   for (const sx of [-1, 1]) {
     const panel = new THREE.Mesh(normalizeUVs(extrudeProfile(outline, p.slabThickness, bevel, 'side'), p.seatDepth), mats.frame);
     panel.position.x = sx * x;
-    parts.push(panel);
+    parts.push(grainAlong(panel, 'y'));
   }
   if (p.footrestKind === 'stretcher') {
     const inner = x - p.slabThickness / 2 + 0.005;

@@ -61,8 +61,55 @@ const NEUTRAL_FOOTREST = {
 };
 
 const PALETTE_FIELDS = ['cushionColor', 'cushionSecondary', 'bodyColor', 'accentColor'];
-const PATTERN_FIELDS = ['pattern', 'patternScale', 'stripeDirection'];
-const FINISH_FIELDS = ['frameMode', 'frameColor', 'woodName', 'panMode', 'panColor', 'panSecondary', 'panPattern', 'panPatternScale'];
+const PATTERN_FIELDS = ['pattern'];
+const FINISH_FIELDS = ['frameMode', 'frameColor', 'woodName', 'panMode', 'panColor', 'grain'];
+
+export const PATTERN_WEIGHTS = [
+  ['none', 0.14],
+  ['linen', 0.3],
+  ['boucle', 0.14],
+  ['dots', 0.1],
+  ['gingham', 0.08],
+  ['ticking', 0.08],
+  ['herringbone', 0.08],
+  ['floral', 0.08],
+];
+
+export const GRAIN_WEIGHTS = [['fine', 0.25], ['plain', 0.5], ['bold', 0.25]];
+
+function patternSpec(r) {
+  const kind = weightedPick(r, PATTERN_WEIGHTS);
+  const a = r.next();
+  const b = r.next();
+  const c = r.next();
+  const flag = r.chance(0.5);
+  switch (kind) {
+    case 'linen':
+      return { kind: 'linen', texture: 'linen', thread: 0.003 + 0.002 * a, strength: 0.4 + 0.3 * b };
+    case 'boucle':
+      return { kind: 'linen', texture: 'boucle', thread: 0.005 + 0.003 * a, strength: 0.5 + 0.3 * b };
+    case 'dots':
+      return { kind: 'dots', spacing: 0.03 + 0.03 * a, size: 0.16 + 0.1 * b, layout: flag ? 'offset' : 'grid' };
+    case 'gingham':
+      return { kind: 'gingham', spacing: 0.012 + 0.012 * a, overcheck: c < 0.3 ? 0.12 : 0 };
+    case 'ticking':
+      return { kind: 'ticking', spacing: 0.02 + 0.02 * a, width: 0.1 + 0.1 * b, direction: flag ? 'vertical' : 'horizontal', double: c < 0.25 };
+    case 'herringbone':
+      return { kind: 'herringbone', band: 0.025 + 0.02 * a, spacing: 0.008 + 0.004 * b, width: 0.45 };
+    case 'floral':
+      return { kind: 'floral', spacing: 0.09 + 0.05 * a, petals: 5, size: 0.2 + 0.05 * b, leaves: true };
+    default:
+      return 'none';
+  }
+}
+
+export function patternLabel(pattern) {
+  if (pattern === 'none') return 'solid';
+  if (pattern.kind === 'linen') return pattern.texture === 'boucle' ? 'bouclé' : 'linen';
+  if (pattern.kind === 'dots') return `dots (${pattern.layout})`;
+  if (pattern.kind === 'ticking') return `ticking (${pattern.direction})`;
+  return pattern.kind;
+}
 
 export const FIELDS = {
   style: ['style'],
@@ -287,12 +334,7 @@ export function generateStoolParams(g) {
     };
   });
 
-  const roundCushion = shape.seatShape === 'round' && (style === 'diner' || style === 'drum' || shape.hasCushion);
-  const pattern = g.roll('pattern', (r) => ({
-    pattern: roundCushion ? 'solid' : weightedPick(r, [['solid', 0.5], ['stripes', 0.3], ['checker', 0.2]]),
-    patternScale: r.int(3, 9),
-    stripeDirection: r.pick(['horizontal', 'vertical']),
-  }));
+  const pattern = g.roll('pattern', (r) => ({ pattern: patternSpec(r) }));
 
   const finish = g.roll('finish', (r) => {
     const isWood = r.chance(WOOD_CHANCE[style]);
@@ -300,9 +342,8 @@ export function generateStoolParams(g) {
     if (style === 'drum' && other === 'white') other = 'black';
     const wood = pickWood(r);
     const panRoll = r.next();
-    const planksRoll = r.chance(0.4);
-    const planksScale = r.int(3, 5);
     const tint = r.range(-1, 1);
+    const grainRoll = weightedPick(r, GRAIN_WEIGHTS);
 
     const frameMode = isWood ? 'wood' : other;
     const frameColor = {
@@ -319,17 +360,17 @@ export function generateStoolParams(g) {
     else if (isWood) panMode = panRoll < 0.7 ? 'wood' : 'painted';
     else panMode = panRoll < 0.5 ? 'painted' : 'wood';
 
-    const base = { panPattern: 'solid', panPatternScale: 0 };
     const pan =
       panMode === 'wood'
-        ? { panColor: hsl(wood.h, wood.s, wood.l + 0.04), panSecondary: hsl(wood.h, wood.s, wood.l - 0.04), panPattern: planksRoll ? 'stripes' : 'solid', panPatternScale: planksScale }
+        ? { panColor: hsl(wood.h, wood.s, wood.l + 0.04) }
         : panMode === 'painted'
-          ? { ...base, panColor: palette.accentColor, panSecondary: palette.accentColor }
+          ? { panColor: palette.accentColor }
           : panMode === 'frame'
-            ? { ...base, panColor: frameColor, panSecondary: frameColor }
-            : { ...base, panColor: null, panSecondary: null };
+            ? { panColor: frameColor }
+            : { panColor: null };
+    const woodUsed = isWood || panMode === 'wood';
 
-    return { frameMode, frameColor, woodName: isWood || panMode === 'wood' ? wood.name : null, panMode, ...pan };
+    return { frameMode, frameColor, woodName: woodUsed ? wood.name : null, panMode, ...pan, grain: woodUsed ? grainRoll : 'none' };
   });
 
   return { seed: g.seed, type: 'stool', style, ...shape, ...footrest, ...palette, ...pattern, ...finish };
