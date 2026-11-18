@@ -1,5 +1,5 @@
 import { hsl, pickWood, pickLeather, STONE_TONES, FRAME_COLORS } from '../../core/color.js';
-import { paintColor, accentColor, capSaturation } from '../../core/palette.js';
+import { paintColor, accentColor, capSaturation, harmoniousSecondary, shade, swatch } from '../../core/palette.js';
 import { rollStyle, rollCycle, weightedPick } from '../../core/rng.js';
 import { lerp } from '../../core/math.js';
 import { CABINET_TEMPLATES, TEMPLATE_WEIGHTS } from './templates.js';
@@ -19,7 +19,7 @@ const DEPTH = { sideboard: [0.4, 0.5], lowDresser: [0.42, 0.52], tallChest: [0.4
 const PANEL = { midcentury: [0.016, 0.022], shaker: [0.016, 0.022], modern: [0.016, 0.022], industrial: [0.02, 0.028] };
 const TOP_T = { midcentury: [0.016, 0.025], shaker: [0.022, 0.032], industrial: [0.03, 0.05], modern: [0.016, 0.022] };
 const OVERHANG = { midcentury: [0, 0.012], shaker: [0.015, 0.035], industrial: [0.01, 0.03], modern: [0, 0] };
-export const BODY_MIN = { sideboard: 0.45, lowDresser: 0.55, tallChest: 0.85, nightstand: 0.26, tv: 0.24 };
+export const BODY_MIN = { sideboard: 0.45, lowDresser: 0.55, tallChest: 0.85, nightstand: 0.26, tv: 0.28 };
 
 function generateShape(g, style, kind) {
   return g.roll('shape', (r) => {
@@ -93,7 +93,7 @@ function generateBase(g, style, shape) {
       }
       if (!hairpin) base.legInsetZ = Math.max(base.legInsetZ, base.legThickness / 2 + base.legSplay + 0.004);
     }
-    if (baseKind === 'frameLegs') base.apronHeight = lerp([0.03, 0.05], uApron);
+    if (baseKind === 'frameLegs') base.apronHeight = Math.min(lerp([0.055, 0.08], uApron), 0.4 * legHeight);
     if (baseKind === 'plinth') base.plinthInset = style === 'modern' ? lerp([0.035, 0.06], uPlinth) : lerp([0.02, 0.05], uPlinth);
     if (baseKind === 'skirt') {
       base.skirtCut = pickU(uCut, { arch: 0.6, notch: 0.4 });
@@ -244,6 +244,7 @@ const key = (kind, hex) => `${kind}:${hex}`;
 
 function foldRoles(roles, flags) {
   const distinct = () => new Set(rolesOf(roles)).size;
+  if (distinct() > 4 && roles.backer) roles.backer = null;
   if (distinct() > 4 && roles.base) {
     const woodBody = keyKind(roles.body) === 'wood';
     roles.base = woodBody || !roles.hardware ? roles.body : roles.hardware;
@@ -283,7 +284,8 @@ function generateFinish(g, style, shape, base, fronts, hardware, palette) {
   const brass = capSaturation(0.11, 0.42 + (f.uHwJitter - 0.5) * 0.08, 0.5 + (f.uHwJitter - 0.5) * 0.06).hex;
   const metalFront = f.uMetal < 0.5 ? key('black', FRAME_COLORS.black) : key('metal', FRAME_COLORS.metal);
   const bodyKey = bodyFinish === 'wood' ? key('wood', woodHex) : key('solid', palette.paint);
-  const frontKey = { match: bodyKey, painted: key('solid', palette.paint), accent: key('solid', palette.accent), metal: metalFront }[frontFinish];
+  const frontAccent = bodyFinish === 'painted' ? harmoniousSecondary(swatch(palette.paint), 'analogous').hex : palette.accent;
+  const frontKey = { match: bodyKey, painted: key('solid', palette.paint), accent: key('solid', frontAccent), metal: metalFront }[frontFinish];
   const topKey = { match: bodyKey, wood: key('wood', woodHex), stone: key('stone', stoneHex) }[topFinish];
   const hasParts = hardware.drawerHandle !== 'none' && hardware.drawerHandle !== 'cutout' && hardware.drawerHandle !== 'groove';
   let hardwareFinish = 'none';
@@ -292,13 +294,19 @@ function generateFinish(g, style, shape, base, fronts, hardware, palette) {
     if (hardware.drawerHandle === 'lip') hardwareFinish = keyKind(frontKey) === 'wood' ? 'wood' : 'brass';
     if (hardware.drawerHandle === 'tab') hardwareFinish = 'leather';
   } else if (hardware.drawerHandle !== 'none') hardwareFinish = 'front';
+  const frontSwatch = swatch(keyColor(frontKey));
+  const leatherHex = Math.abs(frontSwatch.l - f.leather.l) < 0.2 ? shade(f.leather, frontSwatch.l < 0.45 ? 0.22 : -0.12).hex : f.leather.hex;
   const hardwareKey = {
     none: null, front: null, brass: key('brass', brass), black: key('black', FRAME_COLORS.black), metal: key('metal', FRAME_COLORS.metal),
-    white: key('white', FRAME_COLORS.white), leather: key('leather', f.leather.hex),
+    white: key('white', FRAME_COLORS.white), leather: key('leather', leatherHex),
     wood: keyKind(frontKey) === 'wood' ? frontKey : key('wood', woodHex),
   }[hardwareFinish];
   const baseFinish = pickU(f.uBase, baseFinishWeights(style, base.baseKind));
-  const baseKey = { body: bodyKey, black: key('black', FRAME_COLORS.black), metal: key('metal', FRAME_COLORS.metal), paint: key('solid', palette.paint) }[baseFinish];
+  const bodySwatch = swatch(keyColor(bodyKey));
+  const paleBody = base.baseKind === 'plinth' && baseFinish === 'body' && bodySwatch.l > 0.75;
+  const bodyBase = paleBody ? key('solid', shade(bodySwatch, -0.22).hex) : bodyKey;
+  const baseKey = { body: bodyBase, black: key('black', FRAME_COLORS.black), metal: key('metal', FRAME_COLORS.metal), paint: key('solid', palette.paint) }[baseFinish];
+  const shadowKey = fronts.hasFronts && (hardware.drawerHandle === 'groove' || hardware.drawerHandle === 'cutout') ? key('shadow', shade(frontSwatch, -0.2).hex) : null;
   const cane = capSaturation(0.11, 0.32, 0.7 + (f.uInsert - 0.5) * 0.08).hex;
   const insertKey = fronts.insertKind === 'cane' ? key('cane', cane) : fronts.insertKind === 'perforated' ? key('perf', FRAME_COLORS.metal) : null;
   const roles = {
@@ -308,6 +316,7 @@ function generateFinish(g, style, shape, base, fronts, hardware, palette) {
     hardware: fronts.hasFronts ? hardwareKey : null,
     base: baseKey,
     insert: fronts.hasFronts ? insertKey : null,
+    backer: shadowKey,
   };
   const flags = { topFolded: false };
   foldRoles(roles, flags);

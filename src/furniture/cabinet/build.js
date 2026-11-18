@@ -28,8 +28,9 @@ function makeMaterial(key, p, m) {
   if (kind === 'stone') return stoneMaterial(p, hex, m);
   if (kind === 'cane') {
     const holes = harmoniousSecondary(swatch(hex), 'dark').hex;
-    return m.pattern({ kind: 'dots', layout: 'grid', spacing: 0.012, size: 0.28, colors: [hex, holes], seed: p.seed }, { roughness: 0.85 });
+    return m.pattern({ kind: 'dots', layout: 'offset', spacing: 0.022, size: 0.3, colors: [hex, holes], seed: p.seed }, { roughness: 0.85 });
   }
+  if (kind === 'shadow') return m.solid(hex, 0.95);
   const holes = shade(swatch(hex), -0.25).hex;
   return m.pattern({ kind: 'dots', layout: 'grid', spacing: 0.01, size: 0.25, colors: [hex, holes], seed: p.seed }, { roughness: 0.4, metalness: 0.6 });
 }
@@ -38,7 +39,7 @@ function createMats(p, m) {
   const made = new Map();
   for (const key of new Set(Object.values(p.roles).filter(Boolean))) made.set(key, makeMaterial(key, p, m));
   const role = (name) => made.get(p.roles[name]) ?? made.get(p.roles.body);
-  return { top: role('top'), body: role('body'), front: role('front'), hardware: role('hardware'), base: role('base'), insert: role('insert') };
+  return { top: role('top'), body: role('body'), front: role('front'), hardware: role('hardware'), base: role('base'), insert: role('insert'), backer: made.get(p.roles.backer) };
 }
 
 function buildTop(p, mats) {
@@ -71,7 +72,7 @@ function buildLegged(p, mats) {
   parts.push(buildLegs(legObject, { frame: mats.base }, fp));
   if (p.baseKind === 'frameLegs') {
     const lines = legLines(legObject, fp);
-    parts.push(buildApron(lines, { top: p.legHeight, height: p.apronHeight, thickness: 0.02 }, mats.base));
+    parts.push(buildApron(lines, { top: p.legHeight, height: p.apronHeight, thickness: 0.02, setback: -Math.max(0, p.legThickness / 2 - 0.012) }, mats.base));
   }
   return parts;
 }
@@ -187,7 +188,7 @@ export function buildCabinet(p, kit) {
       doorFrameWidth: p.doorFrameWidth,
       fullDepth: carcass.innerDepth,
       opening: carcass.opening,
-    }, hw, { front: mats.front, insert: mats.insert, hardware: mats.hardware, carcass: mats.body });
+    }, hw, { front: mats.front, insert: mats.insert, hardware: mats.hardware, carcass: mats.body, backer: mats.backer });
     parts.push(...fronts);
   }
   return parts;
