@@ -1,4 +1,5 @@
 import chair from './chair/index.js';
+import sofa from './sofa/index.js';
 
 const definitions = new Map();
 
@@ -22,3 +23,4 @@ export function list() {
 }
 
 register(chair);
+register(sofa);
