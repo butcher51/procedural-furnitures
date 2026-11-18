@@ -1,4 +1,5 @@
-import { hsl, pickWood, secondaryColor, SECONDARY_MODES } from '../../core/color.js';
+import { FRAME_COLORS, pickWood } from '../../core/color.js';
+import { HARMONY_MODES, accentColor, capSaturation, fabricColor, harmoniousSecondary, shade, swatch } from '../../core/palette.js';
 import { rollStyle, weightedPick } from '../../core/rng.js';
 
 export const STYLES = { sofa: 0.3, loveseat: 0.15, midcentury: 0.15, chaise: 0.15, sectional: 0.25 };
@@ -22,7 +23,7 @@ export function shapeParams(r, style) {
   const chaise = style === 'chaise';
   const sectional = style === 'sectional';
   const t = draws(r, 20);
-  const width = lerp(c.width, t[0]);
+  let width = lerp(c.width, t[0]);
   const depth = lerp(c.depth, t[1]);
   const seatHeight = lerp(c.seat, t[2]);
   const armStyle = weightedPick(fixed(t[3]), c.arms);
@@ -33,6 +34,7 @@ export function shapeParams(r, style) {
   const armRise = armStyle === 'none' ? 0 : lerp(c.rise, t[6]);
   const headHeight = chaise ? Math.max(lerp([0.65, 0.85], t[13]), seatHeight + 0.25) : 0;
   const headLength = chaise ? lerp([0.18, 0.3], t[14]) : 0;
+  if (style === 'loveseat') width = Math.max(width, 1.05 + 2 * armOuter);
   const innerSpan = chaise ? width - headLength : width - 2 * armOuter;
   let backTop = lerp(c.backTop, t[7]);
   if (chaise) backTop = Math.min(backTop, headHeight - 0.05);
@@ -62,7 +64,7 @@ export function shapeParams(r, style) {
 
 const SEAT_COUNT = {
   sofa: { 1: 0.15, 2: 0.35, 3: 0.5 },
-  loveseat: { 1: 0.35, 2: 0.65 },
+  loveseat: { 2: 1 },
   midcentury: { 1: 0.4, 2: 0.35, 3: 0.25 },
   chaise: { 1: 1 },
   sectional: { 2: 0.5, 3: 0.5 },
@@ -88,7 +90,8 @@ export function cushionParams(r, style, s) {
   const sectional = style === 'sectional';
   const chaise = style === 'chaise';
   const seatSpan = sectional ? s.innerSpan - s.returnWidth : s.innerSpan;
-  const seatCushionCount = chaise ? 1 : clamp(Number(weightedPick(fixed(t[0]), SEAT_COUNT[style])), 1, Math.max(1, Math.floor(seatSpan / 0.45)));
+  const wanted = Number(weightedPick(fixed(t[0]), SEAT_COUNT[style]));
+  const seatCushionCount = chaise ? 1 : clamp(s.width >= 1.9 ? Math.max(2, wanted) : wanted, 1, Math.max(1, Math.floor(seatSpan / 0.45)));
   const seatThickness = lerp(SEAT_THICKNESS[style], t[1]);
   const cushionPuff = lerp(CUSHION_PUFF[style] ?? [0.025, 0.06], t[2]);
   const cushionGap = lerp([0, 0.012], t[3]);
@@ -109,7 +112,8 @@ export function cushionParams(r, style, s) {
     thickness = Math.max(0.06, Math.min(thickness, (s.depth - s.backFrameThickness - 0.45 - height * sinA) / cosA));
     height = Math.max(0.14, Math.min(height, (s.backTop + overshoot - cushionBottom - thickness * sinA) / cosA, (s.depth - s.backFrameThickness - 0.45 - thickness * cosA) / sinA));
   }
-  const pillowCount = chaise ? (t[9] < 0.6 ? 0 : 1) : t[9] < 0.45 ? 0 : t[9] < 0.65 ? 1 : 2;
+  const headRoom = chaise ? s.headHeight - s.seatHeight - 0.1 : 1;
+  const pillowCount = chaise ? (t[9] < 0.6 || headRoom < 0.24 ? 0 : 1) : t[9] < 0.45 ? 0 : t[9] < 0.65 ? 1 : 2;
   const base = {
     seatCushionCount, seatThickness, cushionPuff, cushionGap, backMode,
     backCushionCount: backCount,
@@ -120,7 +124,7 @@ export function cushionParams(r, style, s) {
   };
   const usable = usableSeatDepth({ ...s, ...base });
   const pillowSize = chaise
-    ? clamp(lerp([0.34, 0.48], t[10]), 0.28, Math.max(0.28, Math.min(s.depth - 0.15, s.headHeight - s.seatHeight - 0.02)))
+    ? Math.max(0.2, Math.min(lerp([0.34, 0.48], t[10]), s.depth - 0.15, headRoom))
     : Math.max(0.2, Math.min(lerp([0.34, 0.48], t[10]), usable - 0.05, seatSpan / 3));
   const totalCushions = seatCushionCount + backCount + (sectional ? 1 : 0);
   return {
@@ -168,26 +172,27 @@ const MOODS = {
   midcentury: { neutral: 0.25, muted: 0.4, bold: 0.35 },
   default: { neutral: 0.4, muted: 0.4, bold: 0.2 },
 };
-const MOOD_RANGES = { neutral: { s: [0.04, 0.18], l: [0.45, 0.78] }, muted: { s: [0.2, 0.45], l: [0.38, 0.62] }, bold: { s: [0.45, 0.7], l: [0.35, 0.55] } };
 
 export function paletteParams(r, style) {
-  const t = draws(r, 14);
-  const paletteMood = weightedPick(fixed(t[0]), MOODS[style] ?? MOODS.default);
-  const hue = t[1];
-  const range = MOOD_RANGES[paletteMood];
-  const s = lerp(range.s, t[2]);
-  const l = lerp(range.l, t[3]);
-  const primary = hsl(hue, s, l);
-  const secondaryMode = SECONDARY_MODES[Math.min(3, Math.floor(t[4] * 4))];
-  const bodyMode = t[5] < 0.5 ? 'same' : t[5] < 0.85 ? 'match' : 'contrast';
+  const paletteMood = weightedPick(r, MOODS[style] ?? MOODS.default);
+  const base = fabricColor(r, { mood: paletteMood });
+  const secondaryMode = HARMONY_MODES[Math.min(HARMONY_MODES.length - 1, Math.floor(r.next() * HARMONY_MODES.length))];
+  const bodyPick = r.next();
+  const bodyJitter = r.next();
+  const bodyMode = bodyPick < 0.5 ? 'same' : bodyPick < 0.85 ? 'match' : 'contrast';
   const bodyColor =
-    bodyMode === 'same' ? primary :
-    bodyMode === 'match' ? hsl(hue, s * 0.85, l - lerp([0.06, 0.12], t[6])) :
-    hsl((hue + 0.5) % 1, lerp([0.08, 0.2], t[7]), lerp([0.3, 0.7], t[8]));
-  const accentPick = Math.floor(t[9] * 3);
-  const accentHue = accentPick === 0 ? hue + 0.5 : accentPick === 1 ? hue + (t[10] < 0.5 ? -0.08 : 0.08) : 0.12;
-  const accentColor = hsl(((accentHue % 1) + 1) % 1, lerp([0.35, 0.65], t[11]), lerp([0.45, 0.7], t[12]));
-  return { paletteMood, primary, secondary: secondaryColor(secondaryMode, hue), bodyMode, bodyColor, accentColor, hue };
+    bodyMode === 'same' ? base.hex :
+    bodyMode === 'match' ? shade(base, -lerp([0.06, 0.12], bodyJitter)).hex :
+    capSaturation(base.h, 0.08, base.l > 0.5 ? lerp([0.26, 0.34], bodyJitter) : lerp([0.74, 0.82], bodyJitter)).hex;
+  const accent = accentColor(r, base);
+  return {
+    paletteMood,
+    primary: base.hex,
+    secondary: harmoniousSecondary(base, secondaryMode).hex,
+    bodyMode,
+    bodyColor,
+    accentColor: accent.hex,
+  };
 }
 
 export function patternParams(r) {
@@ -200,7 +205,7 @@ export function patternParams(r) {
 
 const WOOD_CHANCE = { sofa: 0.55, loveseat: 0.6, midcentury: 0.75, chaise: 0.7, sectional: 0.45 };
 
-export function finishParams(r, style, legStyle, hue) {
+export function finishParams(r, style, legStyle, primary) {
   const t = draws(r, 6);
   const wood = pickWood(r);
   let frameMode;
@@ -210,11 +215,11 @@ export function finishParams(r, style, legStyle, hue) {
   else frameMode = weightedPick(fixed(t[1]), { black: 0.45, metal: 0.25, brass: 0.15, match: 0.15 });
   const jitter = (t[2] - 0.5) * 0.06;
   const frameColor = {
-    wood: hsl(wood.h, wood.s, wood.l),
-    black: hsl(0.667, 0.03, 0.17 + jitter),
-    metal: hsl(0.58, 0.07, 0.67 + jitter),
-    brass: hsl(0.11, lerp([0.45, 0.55], t[3]), lerp([0.5, 0.58], t[4])),
-    match: hsl(hue, 0.4, 0.32),
+    wood: capSaturation(wood.h, wood.s, wood.l).hex,
+    black: shade(swatch(FRAME_COLORS.black), jitter).hex,
+    metal: shade(swatch(FRAME_COLORS.metal), jitter).hex,
+    brass: capSaturation(0.11, lerp([0.45, 0.55], t[3]), lerp([0.5, 0.58], t[4])).hex,
+    match: shade(swatch(primary), -0.2, 0.8).hex,
   }[frameMode];
   return { frameMode, frameColor, woodName: frameMode === 'wood' ? wood.name : null };
 }
@@ -224,8 +229,8 @@ export function generateSofaParams(g) {
   const shape = g.roll('shape', (r) => shapeParams(r, style));
   const cushions = g.roll('cushions', (r) => cushionParams(r, style, shape));
   const legs = g.roll('legs', (r) => legParams(r, style, shape, cushions));
-  const { hue, ...palette } = g.roll('palette', (r) => paletteParams(r, style));
+  const palette = g.roll('palette', (r) => paletteParams(r, style));
   const pattern = g.roll('pattern', patternParams);
-  const finish = g.roll('finish', (r) => finishParams(r, style, legs.legStyle, hue));
+  const finish = g.roll('finish', (r) => finishParams(r, style, legs.legStyle, palette.primary));
   return { seed: g.seed, type: 'sofa', style, ...shape, ...cushions, ...legs, ...palette, ...pattern, ...finish };
 }

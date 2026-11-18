@@ -6,7 +6,7 @@ import { formatFailures, sweep } from '../helpers/sweep.js';
 
 const SEEDS = 500;
 const EXEMPT = new Set(['chair']);
-const TODO = new Set(['stool', 'table', 'bench', 'sofa']);
+const TODO = new Set(['stool', 'table', 'bench']);
 const HEX = /^#[0-9a-f]{6}$/i;
 
 function paramColours(value, path, out) {
