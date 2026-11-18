@@ -79,15 +79,13 @@ function bed(i, { side, foot, res = 'full', fold = true, throwKind = 'none', lea
   if (sheet.fold) parts.push(new THREE.Mesh(sheet.fold, i % 2 ? bedding : duvetMat));
   if (throwKind === 'runner') {
     const runner = drapeSheet({
-      ...opts, zStart: zM0 + L - 0.5, thickness: 0.016, lift: t + 0.002, fold: null, seed: 3,
-      crownRegion: { zFrom: zStart, zTo: zM0 + L - r }, flareDrop: side.drop,
-      side: side.mode === 'tuck' ? side : { mode: 'drape', drop: side.drop + 0.03 },
-      foot: foot.mode === 'tuck' ? foot : { mode: 'drape', drop: foot.drop + 0.03 },
+      over: { ...opts, fold: null }, zStart: zM0 + L - 0.5, thickness: 0.016, extraDrop: 0.03, wrinkle: 0.004, seed: 3,
+      limit: { x: W / 2 + 0.015, z: zM0 + L + 0.015 },
     });
     parts.push(new THREE.Mesh(runner.main, accent));
   }
   if (throwKind === 'folded') {
-    const th = pillow(0.55, 0.36, 0.06, accent, { pinch: 0.15, waist: 0.01, flatBottom: true, grid: 4 });
+    const th = pillow(0.55, 0.36, 0.035, accent, { pinch: 0.5, waist: 0.02, flatBottom: true, grid: 5 });
     th.rotation.set(-Math.PI / 2, 0, THREE.MathUtils.degToRad(8));
     th.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(th);

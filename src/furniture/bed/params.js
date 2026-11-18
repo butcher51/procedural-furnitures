@@ -389,8 +389,9 @@ function beddingParams(r, style, s, f) {
   const euroRoleDraw = t[14] < 0.5 ? 'accent' : 'bedding';
 
   const duvetKind = t[15] < 0.3 ? 'quilt' : 'duvet';
+  const low = style === 'platform';
   const duvetThickness = round(
-    Math.min(duvetKind === 'quilt' ? lerp([0.02, 0.035], t[16]) : lerp([0.045, 0.08], t[16]), bunk ? 0.05 : 1)
+    Math.min(duvetKind === 'quilt' ? lerp([0.02, 0.035], t[16]) : lerp([0.045, 0.08], t[16]), bunk ? 0.05 : low ? 0.055 : 1)
   );
   const duvetCrown = duvetKind === 'quilt' ? lerp([0, 0.01], t[17]) : lerp([0.01, 0.035], t[17]);
   const duvetFit = bunk ? 'tuck' : t[18] < 0.85 ? 'drape' : 'tuck';
@@ -402,7 +403,7 @@ function beddingParams(r, style, s, f) {
   const footDrop = footFit === 'drape' ? sideDrop : 0;
   const cornerSag = duvetFit === 'drape' && footFit === 'drape' ? Math.min(lerp([0, 0.06], t[20]), Math.max(0, reach - sideDrop)) : 0;
   const foldDepth = t[21] < 0.25 ? 0 : lerp([0.18, 0.4], t[22]);
-  const foldRollRaw = lerp([1, 1.4], t[23]) * duvetThickness;
+  const foldRollRaw = lerp(low ? [1, 1.1] : [1, 1.4], t[23]) * duvetThickness;
   const foldRoll = foldDepth === 0 ? 0 : round(bunk ? Math.min(foldRollRaw, 0.06) : foldRollRaw);
   const throwKind = bunk ? (t[24] < 0.6 ? 'none' : 'folded') : t[24] < 0.4 ? 'none' : t[24] < 0.75 ? 'runner' : 'folded';
   const runner = throwKind === 'runner';
@@ -446,7 +447,7 @@ function beddingParams(r, style, s, f) {
     throwExtraDrop: runner && duvetFit === 'drape' ? Math.min(lerp([0.01, 0.05], t[31]), Math.max(0, reach - sideDrop - cornerSag)) : 0,
     throwWidth: folded ? lerp([0.45, 0.65], t[32]) : 0,
     throwFoldDepth: folded ? lerp([0.3, 0.42], t[33]) : 0,
-    throwFoldThickness: folded ? lerp([0.04, 0.08], t[34]) : 0,
+    throwFoldThickness: folded ? lerp([0.022, 0.04], t[34]) : 0,
     throwYaw: folded ? lerp([-15, 15], t[35]) : 0,
     throwSide: folded ? (t[36] < 0.5 ? 'left' : 'right') : null,
     mattressSegments: bunk ? 2 : 3,
@@ -461,6 +462,13 @@ export function bedPillowPlan(p) {
 const DUVET_MOODS = { default: { neutral: 0.4, muted: 0.4, bold: 0.2 }, bunk: { neutral: 0.25, muted: 0.4, bold: 0.35 } };
 const BEDDING_TONES = { white: 0.45, ivory: 0.3, tinted: 0.25 };
 const UPHOLSTERY_MOODS = { neutral: 0.5, muted: 0.35, bold: 0.15 };
+
+function besideDuvet(accent, duvet) {
+  const d = ((accent.h - duvet.h + 1.5) % 1) - 0.5;
+  const h = Math.abs(d) > 0.1 ? duvet.h + Math.sign(d) * 0.07 : accent.h;
+  const s = Math.min(accent.s, Math.max(duvet.s + 0.08, 0.2));
+  return capSaturation(h, s, accent.l);
+}
 
 const apart = (color, reference) => (Math.abs(color.l - reference.l) < 0.08 ? shade(color, -0.12) : color);
 
@@ -477,7 +485,7 @@ function paletteParams(r, style) {
   const duvetBase = fabricColor(r, { mood: duvetMood });
   const duvet = apart(duvetBase, bedding);
   const secondaryMode = pickIndex(HARMONY_MODES, r.next());
-  const accent = accentColor(r, duvet);
+  const accent = besideDuvet(accentColor(r, duvet), duvet);
   const accentMode = pickIndex(HARMONY_MODES, r.next());
   const upholsteryMood = weightedPick(r, UPHOLSTERY_MOODS);
   const upholstery = apart(fabricColor(r, { mood: upholsteryMood }), duvet);
@@ -537,8 +545,8 @@ function patternParams(r, style) {
 const FRAME_MODES = {
   platform: { wood: 0.6, paint: 0.25, black: 0.15 },
   slatted: { wood: 0.7, paint: 0.15, white: 0.15 },
-  fourPoster: { wood: 0.6, black: 0.2, white: 0.1, metal: 0.1 },
-  fourPosterThin: { black: 0.5, metal: 0.3, white: 0.2 },
+  fourPoster: { wood: 0.64, black: 0.2, white: 0.04, metal: 0.12 },
+  fourPosterThin: { black: 0.58, metal: 0.34, white: 0.08 },
   bunk: { wood: 0.55, paint: 0.25, white: 0.2 },
 };
 

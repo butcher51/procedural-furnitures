@@ -466,23 +466,20 @@ function softGoods(p, m, d, { top, deckY, seedShift, throwKind }) {
   if (sheet.fold) parts.push(Object.assign(new THREE.Mesh(sheet.fold, p.foldMaterial === 'sheet' ? m.bedding : m.duvet), { name: 'duvet' }));
 
   if (throwKind === 'runner') {
-    const extra = p.throwExtraDrop;
+    const foldEnd = p.foldDepth > 0 ? zStart + p.foldDepth + p.foldRoll + 0.03 : -Infinity;
     const runner = drapeSheet({
-      ...base,
-      zStart: zM1 - p.throwDepth,
+      over: base,
+      zStart: Math.max(zM1 - p.throwDepth, foldEnd),
       thickness: p.throwThickness,
-      lift: p.duvetThickness + 0.002,
-      fold: null,
-      seed: 3 + seedShift,
-      crownRegion: { zFrom: zStart, zTo: zM1 - radius },
-      flareDrop: p.sideDrop,
-      side: tuckSide ? side : { mode: 'drape', drop: p.sideDrop + extra },
-      foot: tuckFoot ? foot : { mode: 'drape', drop: p.footDrop + extra },
+      extraDrop: p.throwExtraDrop,
+      wrinkle: p.wrinkle,
+      seed: p.wrinkleSeed + 3 + seedShift,
+      limit: { x: W / 2 + p.clearance - 0.001, z: zM1 + p.clearance - 0.001 },
     });
     parts.push(Object.assign(new THREE.Mesh(runner.main, m.accent), { name: 'throw' }));
   }
   if (throwKind === 'folded') {
-    const th = pillow(p.throwWidth, p.throwFoldDepth, p.throwFoldThickness, m.accent, { pinch: 0.15, waist: 0.01, flatBottom: true, grid: 4 });
+    const th = pillow(p.throwWidth, p.throwFoldDepth, p.throwFoldThickness, m.accent, { pinch: 0.5, waist: 0.02, flatBottom: true, grid: 5 });
     th.rotation.set(-Math.PI / 2, 0, rad(p.throwYaw));
     th.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(th, true);

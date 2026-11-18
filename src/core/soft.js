@@ -176,7 +176,7 @@ function loop(grid, inner, rows, cols, open = false) {
   return [outerPts, innerPts];
 }
 
-export function drapeSheet(opts) {
+function sheetLayout(opts) {
   const {
     top,
     width,
@@ -187,7 +187,6 @@ export function drapeSheet(opts) {
     foot = { mode: 'drape', drop: 0.2 },
     footTaper = 0.25,
     crownRegion = null,
-    fold = null,
     seed = 0,
     res = 'full',
   } = opts;
@@ -243,35 +242,157 @@ export function drapeSheet(opts) {
     const inTop = (col.kind === 'top' || col.sign === 0) && row.kind === 'top';
     const a = col.sign === 0 ? 0 : col.f;
     const c = inTop ? crown * (1 - a * a) * ramp(row.z) : 0;
-    return { p: new THREE.Vector3(x, y, z), n, c };
+    const corner = !footTuck && !sideTuck && row.kind !== 'top' && col.sign !== 0 && col.kind !== 'top' ? { x: x0 + col.sign * uTop, z: zTopEnd } : null;
+    return { p: new THREE.Vector3(x, y, z), n, c, corner };
   };
   const place = (s, o, back = 0, tucked = sideTuck) => {
     const v = s.p.clone().addScaledVector(s.n, o);
     v.z -= back;
+    if (s.corner) roundCorner(v, s.corner);
     if (tucked) v.x = clamp(v.x, 2 * x0 - xMax, xMax);
     if (footTuck) v.z = Math.min(v.z, zEnd);
     return v;
   };
   const jit = (skin, i, j) => wrinkle * hash01(seed, skin * 65536 + i * 256 + j);
+  const isTucked = (row) => sideTuck || (taper && row.kind !== 'top');
 
-  const main = new SheetWriter();
-  const mainOuter = [], mainInner = [];
+  const outer = [], inner = [], normals = [];
   rows.forEach((row, i) => {
     const sw = sideWrapFor(row, sideTuck ? sideTuckSpec : sideDrape);
-    const outerRow = [], innerRow = [];
+    const outerRow = [], innerRow = [], normalRow = [];
     cols.forEach((col, j) => {
       const s = surface(row, col, sw);
-      const o = off + s.c + jit(0, i, j);
-      const tucked = sideTuck || (taper && row.kind !== 'top');
-      outerRow.push(place(s, o, 0, tucked));
-      innerRow.push(place(s, Math.max(o - t, 0.001), 0, tucked));
+      const jj = isTucked(row) && col.kind === 'drape' ? j - col.sign * Math.round(col.f * R.drape) : j;
+      const o = off + s.c + jit(0, i, jj);
+      const v = place(s, o, 0, isTucked(row));
+      outerRow.push(v);
+      innerRow.push(place(s, Math.max(o - t, 0.001), 0, isTucked(row)));
+      normalRow.push(s.corner ? cornerNormal(s, v) : s.n);
     });
-    mainOuter.push(outerRow);
-    mainInner.push(innerRow);
+    outer.push(outerRow);
+    inner.push(innerRow);
+    normals.push(normalRow);
   });
+  return {
+    W, r, t, flare, wrinkle, lift, off, R, x0, side, sideTuck, footTuck, sideDrape, sideTuckSpec, z0, zTopEnd, rows, cols,
+    taperK, sideWrapFor, surface, place, jit, isTucked, outer, inner, normals,
+  };
+}
+
+function roundCorner(v, c) {
+  const dx = Math.abs(v.x - c.x);
+  const dz = v.z - c.z;
+  if (dx <= 1e-9 || dz <= 1e-9) return;
+  const k = Math.max(dx, dz) / Math.hypot(dx, dz);
+  v.x = c.x + Math.sign(v.x - c.x) * dx * k;
+  v.z = c.z + dz * k;
+}
+
+function cornerNormal(s, v) {
+  const d = new THREE.Vector3(v.x - s.corner.x, 0, v.z - s.corner.z);
+  if (d.lengthSq() < 1e-12) return s.n;
+  d.normalize().multiplyScalar(Math.hypot(s.n.x, s.n.z));
+  const n = new THREE.Vector3(d.x, s.n.y, d.z).normalize();
+  n.fixed = true;
+  return n;
+}
+
+function gridNormals(P, fallback) {
+  const nr = P.length - 1, nc = P[0].length - 1;
+  const a = new THREE.Vector3(), b = new THREE.Vector3();
+  return P.map((row, i) => row.map((_, j) => {
+    a.subVectors(P[Math.min(i + 1, nr)][j], P[Math.max(i - 1, 0)][j]);
+    b.subVectors(P[i][Math.min(j + 1, nc)], P[i][Math.max(j - 1, 0)]);
+    const n = new THREE.Vector3().crossVectors(a, b);
+    const f = fallback[i][j];
+    if (f.fixed || n.lengthSq() < 1e-14) return f.clone();
+    n.normalize();
+    return n.dot(f) > 0.5 ? n : f.clone();
+  }));
+}
+
+function finish(main, foldGeo, foldTris) {
+  const total = main.triangles + foldTris;
+  if (total > DRAPE_TRI_CAP) throw new Error(`drapeSheet: ${total} triangles > ${DRAPE_TRI_CAP}`);
+  return { main: main.geometry(), fold: foldGeo };
+}
+
+function drapeOver(opts) {
+  const L = sheetLayout(opts.over);
+  const t = Math.max(opts.thickness ?? 0.015, 0.002);
+  const gap = Math.max(opts.gap ?? 0.003, 0.001);
+  const extra = Math.max(opts.extraDrop ?? 0, 0);
+  const wrinkle = clamp(opts.wrinkle ?? 0, 0, 0.008);
+  const seed = opts.seed ?? 0;
+  const limitX = opts.limit?.x ?? Infinity;
+  const limitZ = opts.limit?.z ?? Infinity;
+  const P = L.outer;
+  const N = gridNormals(P, L.normals);
+  const nr0 = P.length - 1, nc = P[0].length - 1;
+  const zStart = clamp(opts.zStart ?? L.z0, L.z0, L.zTopEnd - 0.05);
+  const first = L.rows.findIndex((row) => row.kind !== 'top' || row.z >= zStart - 1e-9);
+  const rows = [];
+  if (first > 0 && L.rows[first].z - zStart > 0.01) {
+    const za = L.rows[first - 1].z, zb = L.rows[first].z;
+    const k = (zStart - za) / (zb - za);
+    rows.push({
+      row: { kind: 'top', z: zStart },
+      p: P[first].map((v, j) => P[first - 1][j].clone().lerp(v, k)),
+      n: N[first].map((n, j) => N[first - 1][j].clone().lerp(n, k).normalize()),
+      tk: L.taperK({ kind: 'top', z: zStart }),
+    });
+  }
+  for (let i = first; i <= nr0; i++) rows.push({ row: L.rows[i], p: P[i], n: N[i], tk: L.taperK(L.rows[i]) });
+  const nr = rows.length - 1;
+  const outer = [], inner = [];
+  const dir = new THREE.Vector3();
+  rows.forEach((R, ri) => {
+    const outerRow = [], innerRow = [];
+    const tucked = L.isTucked(R.row);
+    const wr = R.row.kind === 'drape' ? R.row.f : 0;
+    L.cols.forEach((col, j) => {
+      const base = R.p[j].clone();
+      const n = R.n[j];
+      const hemSide = (j === 0 || j === nc) && !L.sideTuck && !tucked;
+      const hemFoot = ri === nr && !L.footTuck && ri > 0;
+      if (hemSide || hemFoot) {
+        dir.set(0, 0, 0);
+        if (hemSide) dir.add(base.clone().sub(R.p[j === 0 ? 1 : nc - 1]).normalize());
+        if (hemFoot) dir.add(base.clone().sub(rows[ri - 1].p[j]).normalize());
+        if (dir.lengthSq() > 1e-12) base.addScaledVector(dir.normalize(), extra * (1 - R.tk));
+      }
+      const wc = col.kind === 'drape' && col.sign !== 0 ? col.f : 0;
+      const g = gap * (1 + Math.max(wc, wr) + wc * wr) + wrinkle * hash01(seed, ri * 256 + j);
+      const o = base.clone().addScaledVector(n, g + t);
+      const iv = base.clone().addScaledVector(n, g);
+      for (const v of [o, iv]) {
+        if (tucked) {
+          v.x = clamp(v.x, L.x0 - limitX, L.x0 + limitX);
+          v.y += gap;
+        }
+        if (L.footTuck) v.z = Math.min(v.z, limitZ);
+      }
+      outerRow.push(o);
+      innerRow.push(iv);
+    });
+    outer.push(outerRow);
+    inner.push(innerRow);
+  });
+  const main = new SheetWriter();
+  main.grid(outer);
+  main.band(...loop(outer, inner, nr, nc));
+  return finish(main, null, 0);
+}
+
+export function drapeSheet(opts) {
+  if (opts.over) return drapeOver(opts);
+  const L = sheetLayout(opts);
+  const { t, R, off, lift, wrinkle, flare, side, sideTuck, sideDrape, sideTuckSpec, z0, zTopEnd, rows, cols, surface, place, jit, sideWrapFor } = L;
+  const fold = opts.fold ?? null;
+  const main = new SheetWriter();
   const nr = rows.length - 1, nc = cols.length - 1;
-  main.grid(mainOuter);
-  main.band(...loop(mainOuter, mainInner, nr, nc));
+  main.grid(L.outer);
+  main.band(...loop(L.outer, L.inner, nr, nc));
 
   let foldGeo = null;
   let foldTris = 0;
@@ -279,32 +400,37 @@ export function drapeSheet(opts) {
     const Rr = Math.max(fold.roll ?? t, t);
     const hemLift = fold.hemLift ?? 0.015;
     const depth = clamp(fold.depth ?? 0.25, 0.02, Math.max(zTopEnd - z0 - 0.05, 0.02));
-    const oFold = lift + 2 * Rr;
-    const foldSide = sideTuck
-      ? { ...sideTuckSpec, thetaMax: Math.asin(clamp((r + off) / (r + oFold + wrinkle), 0, 1)) }
-      : wrapSpec(r, { mode: 'drape', drop: Math.max((side.drop ?? 0) - hemLift, 0.002) }, off, flare, opts.flareDrop ?? side.drop ?? r);
-    if (!sideTuck) foldSide.ref = sideDrape.ref;
+    const foldSideAt = (pinch) => {
+      if (sideTuck) return { ...sideTuckSpec, thetaMax: Math.asin(clamp((L.r + off) / (L.r + lift + 2 * t + wrinkle), 0, 1)) };
+      const spec = wrapSpec(L.r, { mode: 'drape', drop: Math.max((side.drop ?? 0) * pinch - hemLift, 0.002) }, off, flare, opts.flareDrop ?? side.drop ?? L.r);
+      spec.ref = sideDrape.ref;
+      return spec;
+    };
     const foldRows = [];
     for (let k = 0; k <= R.roll; k++) foldRows.push({ phi: (Math.PI * k) / R.roll, z: z0 });
-    for (let k = 1; k <= R.layer; k++) foldRows.push({ phi: Math.PI, z: z0 + (depth * k) / R.layer, layer: true });
+    for (let k = 1; k <= R.layer; k++) foldRows.push({ phi: Math.PI, z: z0 + (depth * k) / R.layer, layer: true, end: k === R.layer });
     const outer = [], inner = [];
     foldRows.forEach((fr, i) => {
       const row = { kind: 'top', z: fr.z };
-      const sw = sideWrapFor(row, foldSide);
+      const pinch = fr.layer ? (fr.end ? 0.7 : 1) : 0.6 + 0.4 * (1 - Math.cos(fr.phi)) / 2;
+      const sw = sideWrapFor(row, foldSideAt(pinch));
       const outerRow = [], innerRow = [];
       cols.forEach((col, j) => {
         const s = surface(row, col, sw);
+        const sideW = col.sign === 0 || col.kind === 'top' ? 0 : col.kind === 'shoulder' ? col.f : 1;
+        const tf = t * (1 - 0.5 * sideW);
+        const Rc = Rr + ((t + tf) / 2 - Rr) * sideW;
         const w = (1 - Math.cos(fr.phi)) / 2;
         const jt = jit(1, i, j) * w;
         if (fr.layer) {
-          outerRow.push(place(s, oFold + s.c + jt));
+          outerRow.push(place(s, lift + 2 * Rc + s.c + jt));
           innerRow.push(place(s, off + s.c));
           return;
         }
-        const o = lift + Math.max(0.001, Rr * (1 - Math.cos(fr.phi))) + s.c * w + jt;
-        const back = Rr * Math.sin(fr.phi);
-        const oc = lift + Rr + s.c / 2;
-        const k = (Rr - t) / Rr;
+        const o = lift + Math.max(0.001, Rc * (1 - Math.cos(fr.phi))) + s.c * w + jt;
+        const back = Rc * Math.sin(fr.phi);
+        const oc = lift + Rc + s.c / 2;
+        const k = (Rc - tf) / Rc;
         outerRow.push(place(s, o, back));
         innerRow.push(place(s, oc + (o - oc) * k, back * k));
       });
@@ -317,7 +443,5 @@ export function drapeSheet(opts) {
     foldTris = fw.triangles;
     foldGeo = fw.geometry();
   }
-  const total = main.triangles + foldTris;
-  if (total > DRAPE_TRI_CAP) throw new Error(`drapeSheet: ${total} triangles > ${DRAPE_TRI_CAP}`);
-  return { main: main.geometry(), fold: foldGeo };
+  return finish(main, foldGeo, foldTris);
 }
