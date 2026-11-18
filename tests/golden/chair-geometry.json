@@ -1,0 +1,1202 @@
+[
+ {
+  "seed": "golden-1",
+  "triangles": 1836,
+  "drawCalls": 3,
+  "checksum": 6135.4208
+ },
+ {
+  "seed": "golden-2",
+  "triangles": 5324,
+  "drawCalls": 2,
+  "checksum": 21832.188
+ },
+ {
+  "seed": "golden-3",
+  "triangles": 5332,
+  "drawCalls": 2,
+  "checksum": 25236.0249
+ },
+ {
+  "seed": "golden-4",
+  "triangles": 1836,
+  "drawCalls": 3,
+  "checksum": 7093.7679
+ },
+ {
+  "seed": "golden-5",
+  "triangles": 5340,
+  "drawCalls": 2,
+  "checksum": 16030.5422
+ },
+ {
+  "seed": "golden-6",
+  "triangles": 2972,
+  "drawCalls": 3,
+  "checksum": 5547.8285
+ },
+ {
+  "seed": "golden-7",
+  "triangles": 1892,
+  "drawCalls": 3,
+  "checksum": 5628.1023
+ },
+ {
+  "seed": "golden-8",
+  "triangles": 1220,
+  "drawCalls": 2,
+  "checksum": 6162.6315
+ },
+ {
+  "seed": "golden-9",
+  "triangles": 4164,
+  "drawCalls": 3,
+  "checksum": 11939.7334
+ },
+ {
+  "seed": "golden-10",
+  "triangles": 1216,
+  "drawCalls": 2,
+  "checksum": 5697.2709
+ },
+ {
+  "seed": "golden-11",
+  "triangles": 4752,
+  "drawCalls": 2,
+  "checksum": 27681.3615
+ },
+ {
+  "seed": "golden-12",
+  "triangles": 4180,
+  "drawCalls": 2,
+  "checksum": 19978.1926
+ },
+ {
+  "seed": "golden-13",
+  "triangles": 1600,
+  "drawCalls": 2,
+  "checksum": 6351.5903
+ },
+ {
+  "seed": "golden-14",
+  "triangles": 2416,
+  "drawCalls": 2,
+  "checksum": 6732.0628
+ },
+ {
+  "seed": "golden-15",
+  "triangles": 1600,
+  "drawCalls": 2,
+  "checksum": 6067.454
+ },
+ {
+  "seed": "golden-16",
+  "triangles": 1072,
+  "drawCalls": 2,
+  "checksum": 4342.178
+ },
+ {
+  "seed": "golden-17",
+  "triangles": 1336,
+  "drawCalls": 2,
+  "checksum": 5037.597
+ },
+ {
+  "seed": "golden-18",
+  "triangles": 3656,
+  "drawCalls": 2,
+  "checksum": 19132.8744
+ },
+ {
+  "seed": "golden-19",
+  "triangles": 1336,
+  "drawCalls": 2,
+  "checksum": 4859.1778
+ },
+ {
+  "seed": "golden-20",
+  "triangles": 2988,
+  "drawCalls": 3,
+  "checksum": 5561.9317
+ },
+ {
+  "seed": "golden-21",
+  "triangles": 2996,
+  "drawCalls": 3,
+  "checksum": 10271.1377
+ },
+ {
+  "seed": "golden-22",
+  "triangles": 2044,
+  "drawCalls": 2,
+  "checksum": 4122.2008
+ },
+ {
+  "seed": "golden-23",
+  "triangles": 3012,
+  "drawCalls": 3,
+  "checksum": 11565.0802
+ },
+ {
+  "seed": "golden-24",
+  "triangles": 4360,
+  "drawCalls": 2,
+  "checksum": 18484.7388
+ },
+ {
+  "seed": "golden-25",
+  "triangles": 1096,
+  "drawCalls": 2,
+  "checksum": 5493.1678
+ },
+ {
+  "seed": "golden-26",
+  "triangles": 1340,
+  "drawCalls": 2,
+  "checksum": 5378.6358
+ },
+ {
+  "seed": "golden-27",
+  "triangles": 1724,
+  "drawCalls": 2,
+  "checksum": 7021.6442
+ },
+ {
+  "seed": "golden-28",
+  "triangles": 4164,
+  "drawCalls": 3,
+  "checksum": 11692.3154
+ },
+ {
+  "seed": "golden-29",
+  "triangles": 4832,
+  "drawCalls": 2,
+  "checksum": 20895.4648
+ },
+ {
+  "seed": "golden-30",
+  "triangles": 4148,
+  "drawCalls": 3,
+  "checksum": 12341.8336
+ },
+ {
+  "seed": "golden-31",
+  "triangles": 4180,
+  "drawCalls": 3,
+  "checksum": 12242.506
+ },
+ {
+  "seed": "golden-32",
+  "triangles": 1456,
+  "drawCalls": 2,
+  "checksum": 5254.5159
+ },
+ {
+  "seed": "golden-33",
+  "triangles": 3036,
+  "drawCalls": 3,
+  "checksum": 12884.8559
+ },
+ {
+  "seed": "golden-34",
+  "triangles": 1920,
+  "drawCalls": 2,
+  "checksum": 3743.474
+ },
+ {
+  "seed": "golden-35",
+  "triangles": 1224,
+  "drawCalls": 2,
+  "checksum": 6325.4708
+ },
+ {
+  "seed": "golden-36",
+  "triangles": 3036,
+  "drawCalls": 3,
+  "checksum": 13171.1791
+ },
+ {
+  "seed": "golden-37",
+  "triangles": 952,
+  "drawCalls": 2,
+  "checksum": 4280.2526
+ },
+ {
+  "seed": "golden-38",
+  "triangles": 1456,
+  "drawCalls": 2,
+  "checksum": 5352.1726
+ },
+ {
+  "seed": "golden-39",
+  "triangles": 4148,
+  "drawCalls": 3,
+  "checksum": 9328.9681
+ },
+ {
+  "seed": "golden-40",
+  "triangles": 828,
+  "drawCalls": 2,
+  "checksum": 3483.167
+ },
+ {
+  "seed": "golden-41",
+  "triangles": 4912,
+  "drawCalls": 2,
+  "checksum": 25510.8001
+ },
+ {
+  "seed": "golden-42",
+  "triangles": 3020,
+  "drawCalls": 3,
+  "checksum": 11025.0425
+ },
+ {
+  "seed": "golden-43",
+  "triangles": 1176,
+  "drawCalls": 2,
+  "checksum": 5115.1058
+ },
+ {
+  "seed": "golden-44",
+  "triangles": 5356,
+  "drawCalls": 2,
+  "checksum": 21916.9781
+ },
+ {
+  "seed": "golden-45",
+  "triangles": 1456,
+  "drawCalls": 2,
+  "checksum": 5133.1939
+ },
+ {
+  "seed": "golden-46",
+  "triangles": 5940,
+  "drawCalls": 2,
+  "checksum": 39229.6549
+ },
+ {
+  "seed": "golden-47",
+  "triangles": 1604,
+  "drawCalls": 2,
+  "checksum": 7133.8126
+ },
+ {
+  "seed": "golden-48",
+  "triangles": 1272,
+  "drawCalls": 2,
+  "checksum": 6038.6582
+ },
+ {
+  "seed": "golden-49",
+  "triangles": 1600,
+  "drawCalls": 2,
+  "checksum": 6718.5245
+ },
+ {
+  "seed": "golden-50",
+  "triangles": 1456,
+  "drawCalls": 2,
+  "checksum": 5086.2139
+ },
+ {
+  "seed": "golden-51",
+  "triangles": 1892,
+  "drawCalls": 3,
+  "checksum": 5321.9193
+ },
+ {
+  "seed": "golden-52",
+  "triangles": 1456,
+  "drawCalls": 2,
+  "checksum": 4767.5259
+ },
+ {
+  "seed": "golden-53",
+  "triangles": 1072,
+  "drawCalls": 2,
+  "checksum": 4129.0588
+ },
+ {
+  "seed": "golden-54",
+  "triangles": 1836,
+  "drawCalls": 3,
+  "checksum": 5791.0534
+ },
+ {
+  "seed": "golden-55",
+  "triangles": 3036,
+  "drawCalls": 3,
+  "checksum": 10903.5543
+ },
+ {
+  "seed": "golden-56",
+  "triangles": 2980,
+  "drawCalls": 3,
+  "checksum": 6878.7705
+ },
+ {
+  "seed": "golden-57",
+  "triangles": 5348,
+  "drawCalls": 2,
+  "checksum": 22441.7105
+ },
+ {
+  "seed": "golden-58",
+  "triangles": 3004,
+  "drawCalls": 3,
+  "checksum": 9622.1159
+ },
+ {
+  "seed": "golden-59",
+  "triangles": 2988,
+  "drawCalls": 3,
+  "checksum": 10434.9163
+ },
+ {
+  "seed": "golden-60",
+  "triangles": 1724,
+  "drawCalls": 2,
+  "checksum": 7058.3575
+ },
+ {
+  "seed": "golden-61",
+  "triangles": 1072,
+  "drawCalls": 2,
+  "checksum": 4556.5067
+ },
+ {
+  "seed": "golden-62",
+  "triangles": 3600,
+  "drawCalls": 2,
+  "checksum": 11501.6985
+ },
+ {
+  "seed": "golden-63",
+  "triangles": 7088,
+  "drawCalls": 2,
+  "checksum": 26226.936
+ },
+ {
+  "seed": "golden-64",
+  "triangles": 4380,
+  "drawCalls": 2,
+  "checksum": 14183.4559
+ },
+ {
+  "seed": "golden-65",
+  "triangles": 3004,
+  "drawCalls": 3,
+  "checksum": 11644.7395
+ },
+ {
+  "seed": "golden-66",
+  "triangles": 3000,
+  "drawCalls": 3,
+  "checksum": 11523.1537
+ },
+ {
+  "seed": "golden-67",
+  "triangles": 1196,
+  "drawCalls": 2,
+  "checksum": 5270.7444
+ },
+ {
+  "seed": "golden-68",
+  "triangles": 3068,
+  "drawCalls": 3,
+  "checksum": 12353.4288
+ },
+ {
+  "seed": "golden-69",
+  "triangles": 1892,
+  "drawCalls": 3,
+  "checksum": 6558.8665
+ },
+ {
+  "seed": "golden-70",
+  "triangles": 5528,
+  "drawCalls": 2,
+  "checksum": 31422.314
+ },
+ {
+  "seed": "golden-71",
+  "triangles": 1336,
+  "drawCalls": 2,
+  "checksum": 4818.7385
+ },
+ {
+  "seed": "golden-72",
+  "triangles": 1724,
+  "drawCalls": 2,
+  "checksum": 7218.9322
+ },
+ {
+  "seed": "golden-73",
+  "triangles": 5520,
+  "drawCalls": 2,
+  "checksum": 24388.8745
+ },
+ {
+  "seed": "golden-74",
+  "triangles": 1340,
+  "drawCalls": 2,
+  "checksum": 6441.3131
+ },
+ {
+  "seed": "golden-75",
+  "triangles": 1072,
+  "drawCalls": 2,
+  "checksum": 4013.6872
+ },
+ {
+  "seed": "golden-76",
+  "triangles": 752,
+  "drawCalls": 2,
+  "checksum": 4343.0529
+ },
+ {
+  "seed": "golden-77",
+  "triangles": 4876,
+  "drawCalls": 2,
+  "checksum": 17876.9887
+ },
+ {
+  "seed": "golden-78",
+  "triangles": 6008,
+  "drawCalls": 2,
+  "checksum": 35168.8363
+ },
+ {
+  "seed": "golden-79",
+  "triangles": 2416,
+  "drawCalls": 2,
+  "checksum": 6526.1519
+ },
+ {
+  "seed": "golden-80",
+  "triangles": 1340,
+  "drawCalls": 2,
+  "checksum": 6065.9812
+ },
+ {
+  "seed": "golden-81",
+  "triangles": 3012,
+  "drawCalls": 3,
+  "checksum": 12166.0863
+ },
+ {
+  "seed": "golden-82",
+  "triangles": 1600,
+  "drawCalls": 2,
+  "checksum": 6865.8031
+ },
+ {
+  "seed": "golden-83",
+  "triangles": 1248,
+  "drawCalls": 2,
+  "checksum": 5715.896
+ },
+ {
+  "seed": "golden-84",
+  "triangles": 6508,
+  "drawCalls": 2,
+  "checksum": 23627.6197
+ },
+ {
+  "seed": "golden-85",
+  "triangles": 3004,
+  "drawCalls": 3,
+  "checksum": 5122.2045
+ },
+ {
+  "seed": "golden-86",
+  "triangles": 1844,
+  "drawCalls": 3,
+  "checksum": 6651.8095
+ },
+ {
+  "seed": "golden-87",
+  "triangles": 1860,
+  "drawCalls": 3,
+  "checksum": 6092.153
+ },
+ {
+  "seed": "golden-88",
+  "triangles": 1248,
+  "drawCalls": 2,
+  "checksum": 6842.2496
+ },
+ {
+  "seed": "golden-89",
+  "triangles": 4752,
+  "drawCalls": 2,
+  "checksum": 14415.118
+ },
+ {
+  "seed": "golden-90",
+  "triangles": 4760,
+  "drawCalls": 2,
+  "checksum": 21228.1155
+ },
+ {
+  "seed": "golden-91",
+  "triangles": 5364,
+  "drawCalls": 2,
+  "checksum": 19942.9271
+ },
+ {
+  "seed": "golden-92",
+  "triangles": 3012,
+  "drawCalls": 3,
+  "checksum": 10908.2903
+ },
+ {
+  "seed": "golden-93",
+  "triangles": 1456,
+  "drawCalls": 2,
+  "checksum": 4715.0176
+ },
+ {
+  "seed": "golden-94",
+  "triangles": 3004,
+  "drawCalls": 3,
+  "checksum": 10044.305
+ },
+ {
+  "seed": "golden-95",
+  "triangles": 3000,
+  "drawCalls": 3,
+  "checksum": 11734.506
+ },
+ {
+  "seed": "golden-96",
+  "triangles": 1860,
+  "drawCalls": 3,
+  "checksum": 5881.223
+ },
+ {
+  "seed": "golden-97",
+  "triangles": 3036,
+  "drawCalls": 3,
+  "checksum": 9287.5655
+ },
+ {
+  "seed": "golden-98",
+  "triangles": 1860,
+  "drawCalls": 3,
+  "checksum": 6313.8892
+ },
+ {
+  "seed": "golden-99",
+  "triangles": 1456,
+  "drawCalls": 2,
+  "checksum": 5308.9004
+ },
+ {
+  "seed": "golden-100",
+  "triangles": 1844,
+  "drawCalls": 3,
+  "checksum": 5142.5751
+ },
+ {
+  "seed": "golden-101",
+  "triangles": 5572,
+  "drawCalls": 2,
+  "checksum": 32531.9439
+ },
+ {
+  "seed": "golden-102",
+  "triangles": 3020,
+  "drawCalls": 3,
+  "checksum": 8744.1545
+ },
+ {
+  "seed": "golden-103",
+  "triangles": 1340,
+  "drawCalls": 2,
+  "checksum": 5933.8489
+ },
+ {
+  "seed": "golden-104",
+  "triangles": 2400,
+  "drawCalls": 2,
+  "checksum": 5889.1485
+ },
+ {
+  "seed": "golden-105",
+  "triangles": 5440,
+  "drawCalls": 2,
+  "checksum": 14384.1013
+ },
+ {
+  "seed": "golden-106",
+  "triangles": 1272,
+  "drawCalls": 2,
+  "checksum": 6953.1463
+ },
+ {
+  "seed": "golden-107",
+  "triangles": 1724,
+  "drawCalls": 2,
+  "checksum": 6711.2024
+ },
+ {
+  "seed": "golden-108",
+  "triangles": 1224,
+  "drawCalls": 2,
+  "checksum": 7095.5107
+ },
+ {
+  "seed": "golden-109",
+  "triangles": 4212,
+  "drawCalls": 2,
+  "checksum": 18115.3807
+ },
+ {
+  "seed": "golden-110",
+  "triangles": 952,
+  "drawCalls": 2,
+  "checksum": 4096.764
+ },
+ {
+  "seed": "golden-111",
+  "triangles": 4752,
+  "drawCalls": 2,
+  "checksum": 18080.8771
+ },
+ {
+  "seed": "golden-112",
+  "triangles": 1844,
+  "drawCalls": 3,
+  "checksum": 5567.747
+ },
+ {
+  "seed": "golden-113",
+  "triangles": 1196,
+  "drawCalls": 2,
+  "checksum": 5497.7633
+ },
+ {
+  "seed": "golden-114",
+  "triangles": 2392,
+  "drawCalls": 2,
+  "checksum": 5809.9209
+ },
+ {
+  "seed": "golden-115",
+  "triangles": 4148,
+  "drawCalls": 3,
+  "checksum": 11773.7769
+ },
+ {
+  "seed": "golden-116",
+  "triangles": 2400,
+  "drawCalls": 2,
+  "checksum": 6233.4437
+ },
+ {
+  "seed": "golden-117",
+  "triangles": 4180,
+  "drawCalls": 3,
+  "checksum": 11570.423
+ },
+ {
+  "seed": "golden-118",
+  "triangles": 1304,
+  "drawCalls": 2,
+  "checksum": 5078.7346
+ },
+ {
+  "seed": "golden-119",
+  "triangles": 7104,
+  "drawCalls": 2,
+  "checksum": 26415.4268
+ },
+ {
+  "seed": "golden-120",
+  "triangles": 1600,
+  "drawCalls": 2,
+  "checksum": 6820.419
+ },
+ {
+  "seed": "golden-121",
+  "triangles": 2988,
+  "drawCalls": 3,
+  "checksum": 6692.3493
+ },
+ {
+  "seed": "golden-122",
+  "triangles": 1604,
+  "drawCalls": 2,
+  "checksum": 6081.9976
+ },
+ {
+  "seed": "golden-123",
+  "triangles": 2996,
+  "drawCalls": 3,
+  "checksum": 11307.2904
+ },
+ {
+  "seed": "golden-124",
+  "triangles": 1812,
+  "drawCalls": 3,
+  "checksum": 6061.5217
+ },
+ {
+  "seed": "golden-125",
+  "triangles": 1072,
+  "drawCalls": 2,
+  "checksum": 4341.435
+ },
+ {
+  "seed": "golden-126",
+  "triangles": 1072,
+  "drawCalls": 2,
+  "checksum": 4428.9668
+ },
+ {
+  "seed": "golden-127",
+  "triangles": 1724,
+  "drawCalls": 2,
+  "checksum": 6921.9771
+ },
+ {
+  "seed": "golden-128",
+  "triangles": 4180,
+  "drawCalls": 3,
+  "checksum": 10293.812
+ },
+ {
+  "seed": "golden-129",
+  "triangles": 3036,
+  "drawCalls": 3,
+  "checksum": 11217.4418
+ },
+ {
+  "seed": "golden-130",
+  "triangles": 4980,
+  "drawCalls": 2,
+  "checksum": 23992.7269
+ },
+ {
+  "seed": "golden-131",
+  "triangles": 4744,
+  "drawCalls": 2,
+  "checksum": 16976.5091
+ },
+ {
+  "seed": "golden-132",
+  "triangles": 2400,
+  "drawCalls": 2,
+  "checksum": 7222.319
+ },
+ {
+  "seed": "golden-133",
+  "triangles": 2980,
+  "drawCalls": 3,
+  "checksum": 7052.9534
+ },
+ {
+  "seed": "golden-134",
+  "triangles": 1540,
+  "drawCalls": 2,
+  "checksum": 6297.4726
+ },
+ {
+  "seed": "golden-135",
+  "triangles": 1604,
+  "drawCalls": 2,
+  "checksum": 6830.6771
+ },
+ {
+  "seed": "golden-136",
+  "triangles": 1560,
+  "drawCalls": 2,
+  "checksum": 6423.2584
+ },
+ {
+  "seed": "golden-137",
+  "triangles": 1072,
+  "drawCalls": 2,
+  "checksum": 4093.4807
+ },
+ {
+  "seed": "golden-138",
+  "triangles": 840,
+  "drawCalls": 2,
+  "checksum": 3692.5319
+ },
+ {
+  "seed": "golden-139",
+  "triangles": 4164,
+  "drawCalls": 3,
+  "checksum": 10435.6499
+ },
+ {
+  "seed": "golden-140",
+  "triangles": 4212,
+  "drawCalls": 2,
+  "checksum": 16178.2315
+ },
+ {
+  "seed": "golden-141",
+  "triangles": 6508,
+  "drawCalls": 2,
+  "checksum": 23914.5101
+ },
+ {
+  "seed": "golden-142",
+  "triangles": 1072,
+  "drawCalls": 2,
+  "checksum": 4707.6451
+ },
+ {
+  "seed": "golden-143",
+  "triangles": 1824,
+  "drawCalls": 3,
+  "checksum": 4755.1229
+ },
+ {
+  "seed": "golden-144",
+  "triangles": 3112,
+  "drawCalls": 2,
+  "checksum": 18058.0505
+ },
+ {
+  "seed": "golden-145",
+  "triangles": 1828,
+  "drawCalls": 3,
+  "checksum": 6337.1129
+ },
+ {
+  "seed": "golden-146",
+  "triangles": 5332,
+  "drawCalls": 2,
+  "checksum": 21909.9135
+ },
+ {
+  "seed": "golden-147",
+  "triangles": 5940,
+  "drawCalls": 2,
+  "checksum": 33078.2149
+ },
+ {
+  "seed": "golden-148",
+  "triangles": 4876,
+  "drawCalls": 2,
+  "checksum": 31081.4007
+ },
+ {
+  "seed": "golden-149",
+  "triangles": 1600,
+  "drawCalls": 2,
+  "checksum": 6686.9588
+ },
+ {
+  "seed": "golden-150",
+  "triangles": 4764,
+  "drawCalls": 2,
+  "checksum": 26869.9114
+ },
+ {
+  "seed": "golden-151",
+  "triangles": 1456,
+  "drawCalls": 2,
+  "checksum": 5737.2973
+ },
+ {
+  "seed": "golden-152",
+  "triangles": 1224,
+  "drawCalls": 2,
+  "checksum": 7183.5708
+ },
+ {
+  "seed": "golden-153",
+  "triangles": 3012,
+  "drawCalls": 3,
+  "checksum": 11351.3156
+ },
+ {
+  "seed": "golden-154",
+  "triangles": 7120,
+  "drawCalls": 2,
+  "checksum": 30668.1532
+ },
+ {
+  "seed": "golden-155",
+  "triangles": 4860,
+  "drawCalls": 2,
+  "checksum": 15664.1765
+ },
+ {
+  "seed": "golden-156",
+  "triangles": 3036,
+  "drawCalls": 3,
+  "checksum": 11899.279
+ },
+ {
+  "seed": "golden-157",
+  "triangles": 4156,
+  "drawCalls": 3,
+  "checksum": 9853.2797
+ },
+ {
+  "seed": "golden-158",
+  "triangles": 6008,
+  "drawCalls": 2,
+  "checksum": 24309.9822
+ },
+ {
+  "seed": "golden-159",
+  "triangles": 3020,
+  "drawCalls": 3,
+  "checksum": 9675.6781
+ },
+ {
+  "seed": "golden-160",
+  "triangles": 1724,
+  "drawCalls": 2,
+  "checksum": 6866.402
+ },
+ {
+  "seed": "golden-161",
+  "triangles": 1604,
+  "drawCalls": 2,
+  "checksum": 6386.7347
+ },
+ {
+  "seed": "golden-162",
+  "triangles": 1456,
+  "drawCalls": 2,
+  "checksum": 5204.2137
+ },
+ {
+  "seed": "golden-163",
+  "triangles": 3004,
+  "drawCalls": 3,
+  "checksum": 4841.56
+ },
+ {
+  "seed": "golden-164",
+  "triangles": 4896,
+  "drawCalls": 2,
+  "checksum": 26054.2281
+ },
+ {
+  "seed": "golden-165",
+  "triangles": 3004,
+  "drawCalls": 3,
+  "checksum": 11047.0858
+ },
+ {
+  "seed": "golden-166",
+  "triangles": 828,
+  "drawCalls": 2,
+  "checksum": 3846.166
+ },
+ {
+  "seed": "golden-167",
+  "triangles": 1860,
+  "drawCalls": 3,
+  "checksum": 6817.5125
+ },
+ {
+  "seed": "golden-168",
+  "triangles": 780,
+  "drawCalls": 2,
+  "checksum": 4088.3618
+ },
+ {
+  "seed": "golden-169",
+  "triangles": 2392,
+  "drawCalls": 2,
+  "checksum": 5980.0835
+ },
+ {
+  "seed": "golden-170",
+  "triangles": 4164,
+  "drawCalls": 3,
+  "checksum": 11179.7033
+ },
+ {
+  "seed": "golden-171",
+  "triangles": 3012,
+  "drawCalls": 3,
+  "checksum": 13045.2012
+ },
+ {
+  "seed": "golden-172",
+  "triangles": 1072,
+  "drawCalls": 2,
+  "checksum": 4422.9674
+ },
+ {
+  "seed": "golden-173",
+  "triangles": 1240,
+  "drawCalls": 2,
+  "checksum": 6401.3257
+ },
+ {
+  "seed": "golden-174",
+  "triangles": 3036,
+  "drawCalls": 3,
+  "checksum": 10837.6109
+ },
+ {
+  "seed": "golden-175",
+  "triangles": 1836,
+  "drawCalls": 3,
+  "checksum": 4753.758
+ },
+ {
+  "seed": "golden-176",
+  "triangles": 3036,
+  "drawCalls": 3,
+  "checksum": 10546.4992
+ },
+ {
+  "seed": "golden-177",
+  "triangles": 1456,
+  "drawCalls": 2,
+  "checksum": 5086.4235
+ },
+ {
+  "seed": "golden-178",
+  "triangles": 3012,
+  "drawCalls": 3,
+  "checksum": 11626.7668
+ },
+ {
+  "seed": "golden-179",
+  "triangles": 1420,
+  "drawCalls": 2,
+  "checksum": 6263.8266
+ },
+ {
+  "seed": "golden-180",
+  "triangles": 1216,
+  "drawCalls": 2,
+  "checksum": 5409.2012
+ },
+ {
+  "seed": "golden-181",
+  "triangles": 6676,
+  "drawCalls": 2,
+  "checksum": 35759.0273
+ },
+ {
+  "seed": "golden-182",
+  "triangles": 1456,
+  "drawCalls": 2,
+  "checksum": 5801.012
+ },
+ {
+  "seed": "golden-183",
+  "triangles": 2988,
+  "drawCalls": 3,
+  "checksum": 6464.1413
+ },
+ {
+  "seed": "golden-184",
+  "triangles": 3004,
+  "drawCalls": 3,
+  "checksum": 12833.7968
+ },
+ {
+  "seed": "golden-185",
+  "triangles": 1248,
+  "drawCalls": 2,
+  "checksum": 7584.4447
+ },
+ {
+  "seed": "golden-186",
+  "triangles": 1456,
+  "drawCalls": 2,
+  "checksum": 5016.9426
+ },
+ {
+  "seed": "golden-187",
+  "triangles": 6680,
+  "drawCalls": 2,
+  "checksum": 30181.8101
+ },
+ {
+  "seed": "golden-188",
+  "triangles": 1604,
+  "drawCalls": 2,
+  "checksum": 6734.9271
+ },
+ {
+  "seed": "golden-189",
+  "triangles": 3004,
+  "drawCalls": 3,
+  "checksum": 11809.2281
+ },
+ {
+  "seed": "golden-190",
+  "triangles": 1340,
+  "drawCalls": 2,
+  "checksum": 5625.448
+ },
+ {
+  "seed": "golden-191",
+  "triangles": 1540,
+  "drawCalls": 2,
+  "checksum": 6490.0675
+ },
+ {
+  "seed": "golden-192",
+  "triangles": 1724,
+  "drawCalls": 2,
+  "checksum": 7262.43
+ },
+ {
+  "seed": "golden-193",
+  "triangles": 3004,
+  "drawCalls": 3,
+  "checksum": 12562.9176
+ },
+ {
+  "seed": "golden-194",
+  "triangles": 1724,
+  "drawCalls": 2,
+  "checksum": 6967.8791
+ },
+ {
+  "seed": "golden-195",
+  "triangles": 1724,
+  "drawCalls": 2,
+  "checksum": 6509.4234
+ },
+ {
+  "seed": "golden-196",
+  "triangles": 1724,
+  "drawCalls": 2,
+  "checksum": 7280.4482
+ },
+ {
+  "seed": "golden-197",
+  "triangles": 3036,
+  "drawCalls": 3,
+  "checksum": 10088.4928
+ },
+ {
+  "seed": "golden-198",
+  "triangles": 1580,
+  "drawCalls": 2,
+  "checksum": 6289.0346
+ },
+ {
+  "seed": "golden-199",
+  "triangles": 3036,
+  "drawCalls": 3,
+  "checksum": 13990.8353
+ },
+ {
+  "seed": "golden-200",
+  "triangles": 1820,
+  "drawCalls": 3,
+  "checksum": 6824.4388
+ }
+]
