@@ -275,3 +275,14 @@ Everything else above is an architect ruling. These need the product owner:
 5. **All view mix weights (W8)** — bed 0.5, sofa 0.75; `type=all` links reshuffle anyway when four types are added.
 6. **Sofa keeps its old pillows in wave 2 (W7)** — the new lens `pillow` comes to the sofa in a separate PR with a
    before/after sheet.
+
+## Human gate — approved 2026-11-18
+
+The product owner approved all wave-2 specs, rulings W1–W9 and the recommendations ("approve all"):
+
+1. Cabinet `kind` is a second cycled re-roll group (`rollCycle`).
+2. Decor layouts are regenerated in build from a param seed (`fillSeed`); the contract gains that sentence.
+3. Non-square cells (`cell.spacingZ`) for cabinet (2.3 × 1.5) and desk (2.1 × 1.6).
+4. Keep cabinet `modern` and desk `panel`; metal bed and loft bunk deferred.
+5. All-view `mixWeight`: bed 0.5, sofa 0.75, others 1.
+6. Sofa keeps its current pillows in wave 2; adopting `pillow` is a separate PR.
