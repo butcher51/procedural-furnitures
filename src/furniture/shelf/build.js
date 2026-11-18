@@ -7,8 +7,9 @@ import { contentsLayout } from './params.js';
 
 function materials(p, m) {
   const wood = (hex, grain) => m.wood(hex, { grain, seed: p.seed });
+  const wide = p.style !== 'open' && p.grain === 'bold' ? 'plain' : p.grain;
   const frame = p.frameMode === 'wood'
-    ? wood(p.frameColor, p.grain)
+    ? wood(p.frameColor, wide)
     : p.frameMode === 'metal' ? m.frame(p.frameColor, 'metal') : m.solid(p.frameColor, 0.8);
   const boardGrain = p.grain === 'bold' ? 'plain' : p.grain;
   let boards = frame;
@@ -17,7 +18,7 @@ function materials(p, m) {
   else if (p.frameMode === 'wood' && p.grain === 'bold') boards = wood(p.boardColor, boardGrain);
   let back = null;
   if (p.backMode === 'match') back = frame;
-  else if (p.backMode === 'wood') back = wood(p.backColor, p.grain);
+  else if (p.backMode === 'wood') back = wood(p.backColor, wide);
   else if (p.backMode === 'accent' || p.backMode === 'paint') {
     back = p.backPattern === 'linen'
       ? m.pattern({ kind: 'linen', colors: [p.backColor], thread: 0.006, strength: 0.5, seed: p.seed })

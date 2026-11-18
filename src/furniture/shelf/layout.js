@@ -11,7 +11,7 @@ export const LEAN_TOP_MARGIN = 0.24;
 export const LEAN_TOP_CLEAR = 0.22;
 export const LEAN_Y0_NOMINAL = 0.21;
 export const LADDER_Y0 = 0.22;
-export const LADDER_TOP_CLEAR = 0.26;
+export const LADDER_TOP_CLEAR = 0.23;
 export const LADDER_MARGIN = { 1: 0.36, 2: 0.46 };
 export const CUBE_MAX_BASE = 0.18;
 export const BASE_RANGE = {
@@ -168,9 +168,9 @@ function columns(p) {
   return [[-xin, xin]];
 }
 
-function rowBounds(p, y) {
+function rowBounds(p, y, clear) {
   if (p.style === 'ladder') return [-ladderOuter(p, y), ladderOuter(p, y)];
-  if (p.style === 'leaning') return [0.001, leanFront(p, y)];
+  if (p.style === 'leaning') return [0.001, leanFront(p, y + clear)];
   const hasBack = p.backKind === 'panel' || (p.style === 'open' && p.backKind === 'brace');
   return [hasBack ? backFront(p) : -p.depth / 2, p.depth / 2];
 }
@@ -187,7 +187,7 @@ export function bays(p) {
   const count = p.style === 'open' ? p.shelfCount - 1 : p.shelfCount;
   const out = [];
   for (let i = 0; i < count; i++) {
-    const [zBack, zFront] = rowBounds(p, lv.tops[i]);
+    const [zBack, zFront] = rowBounds(p, lv.tops[i], lv.clears[i]);
     cols.forEach(([x0, x1], j) => {
       out.push({
         id: `r${i}c${j}`,
@@ -197,7 +197,7 @@ export function bays(p) {
         clear: lv.clears[i],
         zBack: zBack - shift,
         zFront: zFront - shift,
-        back: p.backKind === 'panel' || p.style === 'leaning',
+        back: p.backKind === 'panel',
       });
     });
   }
