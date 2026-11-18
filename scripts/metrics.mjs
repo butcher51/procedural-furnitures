@@ -1,42 +1,34 @@
 import { performance } from 'node:perf_hooks';
+import { parseArgs } from 'node:util';
+import { createKit } from '../src/core/kit.js';
+import { buildItem, generateItem } from '../src/core/item.js';
+import { disposeObject } from '../src/core/merge.js';
+import * as registry from '../src/furniture/registry.js';
 
-globalThis.document ??= {
-  createElement: () => ({ width: 0, height: 0, getContext: () => ({ fillStyle: '', fillRect() {} }) }),
-};
+const { values: args, positionals } = parseArgs({
+  allowPositionals: true,
+  options: {
+    type: { type: 'string' },
+    json: { type: 'boolean', default: false },
+  },
+});
 
-const { generateParams, buildChair, disposeObject } = await import('../chair.js');
-
-const count = Number(process.argv[2]) || 500;
-const prefix = process.argv[3] || 'metrics';
-const rows = [];
-
-for (let i = 1; i <= count; i++) {
-  const params = generateParams(`${prefix}-${i}`);
-  const start = performance.now();
-  const object = buildChair(params);
-  const ms = performance.now() - start;
-  let triangles = 0;
-  let drawCalls = 0;
-  object.traverse((o) => {
-    if (!o.isMesh) return;
-    drawCalls++;
-    const g = o.geometry;
-    triangles += (g.index ? g.index.count : g.attributes.position.count) / 3;
-  });
-  rows.push({ style: params.style, triangles, drawCalls, ms });
-  disposeObject(object);
-}
+const count = Number(positionals[0]) || 500;
+const prefix = positionals[1] || 'metrics';
+const definitions = args.type ? [registry.get(args.type)] : registry.list();
+const kit = createKit();
 
 const pct = (values, p) => {
   const sorted = [...values].sort((a, b) => a - b);
   return sorted[Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length))];
 };
 
-const summarise = (label, list) => {
+const summarise = (type, label, list) => {
   const tris = list.map((r) => r.triangles);
   const calls = list.map((r) => r.drawCalls);
   const ms = list.map((r) => r.ms);
   return {
+    type,
     group: label,
     n: list.length,
     'tris p50': pct(tris, 50),
@@ -48,8 +40,29 @@ const summarise = (label, list) => {
   };
 };
 
-const styles = [...new Set(rows.map((r) => r.style))].sort();
-const table = [summarise('all', rows), ...styles.map((s) => summarise(s, rows.filter((r) => r.style === s)))];
+function measure(definition) {
+  const rows = [];
+  for (let i = 1; i <= count; i++) {
+    const params = generateItem(definition, prefix, i);
+    const start = performance.now();
+    const object = buildItem(definition, params, kit);
+    const ms = performance.now() - start;
+    let triangles = 0;
+    let drawCalls = 0;
+    object.traverse((o) => {
+      if (!o.isMesh) return;
+      drawCalls++;
+      const g = o.geometry;
+      triangles += (g.index ? g.index.count : g.attributes.position.count) / 3;
+    });
+    rows.push({ style: params.style, triangles, drawCalls, ms });
+    disposeObject(object);
+  }
+  const styles = [...new Set(rows.map((r) => r.style))].sort();
+  return [summarise(definition.id, 'all', rows), ...styles.map((s) => summarise(definition.id, s, rows.filter((r) => r.style === s)))];
+}
 
-if (process.argv.includes('--json')) console.log(JSON.stringify(table, null, 2));
+const table = definitions.flatMap(measure);
+
+if (args.json) console.log(JSON.stringify(table, null, 2));
 else console.table(table);

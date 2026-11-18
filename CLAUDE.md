@@ -16,7 +16,8 @@ Seeded, low-poly three.js furniture showroom. Grows the `procedural-chairs` base
 | `npm test` | `node --test` over `tests/unit/**/*.test.js` |
 | `npm run snapshot -- --type chair --seed abc` | Contact sheet PNG in `out/snapshots/` |
 | `npm run verify -- --type chair` | Gate: tests + invariants + budgets + snapshot, one summary line |
-| `npm run metrics` | Triangles / draw calls / build ms over 500 chair seeds |
+| `npm run metrics -- [count] [prefix] [--type T] [--json]` | Triangles / draw calls / build ms over 500 seeds per type |
+| `node tests/invariants/run.mjs [--type T] [--count N]` | Geometry invariant sweep, prints `invariants: pass/total` |
 
 First-time setup: `npm install && npx playwright install chromium`.
 
