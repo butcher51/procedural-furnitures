@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createKit } from '../../src/core/kit.js';
 import { generateItem } from '../../src/core/item.js';
 import { disposeObject, groupParts, mergeByMaterial } from '../../src/core/merge.js';
+import { hexToHsl } from '../../src/core/palette.js';
 import * as registry from '../../src/furniture/registry.js';
 import { geometryStats } from '../helpers/geometry-stats.js';
 import { checkInvariants } from '../helpers/invariants.js';
@@ -133,6 +134,27 @@ test('geometry invariants hold over 500 seeds and budgets are met', () => {
   assert.ok(maxDraws <= 4, `draw calls ${maxDraws}`);
 });
 
+test('cushion patterns come from the shader pool with the weighted mix and wood carries grain', () => {
+  const kinds = {};
+  for (const p of all) {
+    const label = p.pattern === 'none' ? 'none' : p.pattern.kind === 'linen' ? p.pattern.texture : p.pattern.kind;
+    kinds[label] = (kinds[label] ?? 0) + 1;
+    if (p.woodName) assert.ok(['fine', 'plain', 'bold'].includes(p.grain), `${p.seed} grain ${p.grain}`);
+    else assert.equal(p.grain, 'none');
+  }
+  assert.deepEqual(Object.keys(kinds).sort(), ['boucle', 'dots', 'floral', 'gingham', 'herringbone', 'linen', 'none', 'ticking']);
+  assert.ok(kinds.linen + kinds.none + kinds.boucle > 0.5 * SEEDS, 'plain fabrics stay most common');
+  assert.ok(kinds.dots + kinds.floral + kinds.gingham + kinds.ticking + kinds.herringbone < 0.45 * SEEDS, 'loud patterns stay a minority');
+});
+
+test('pattern re-roll changes only the pattern field', () => {
+  for (const n of numbers.slice(0, 100)) {
+    const a = params(n);
+    const b = params(n, { pattern: 1 });
+    for (const key of Object.keys(a)) if (key !== 'pattern') assert.deepStrictEqual(a[key], b[key], `${n} ${key}`);
+  }
+});
+
 test('build is pure and releases its textures', () => {
   const kit = createKit();
   for (const n of numbers.slice(0, 60)) {
@@ -142,4 +164,18 @@ test('build is pure and releases its textures', () => {
     assert.equal(geometryStats(object).checksum, a.checksum);
     disposeObject(object);
   }
+});
+
+test('floral spacing shrinks on small seats and dark cushions never get a darker pattern colour', () => {
+  let florals = 0;
+  for (let n = 1; n <= 800; n++) {
+    const p = params(n);
+    if (p.pattern !== 'none' && p.pattern.kind === 'floral') {
+      florals++;
+      assert.ok(p.pattern.spacing <= 0.14 * Math.min(1, Math.max(0.6, p.seatWidth / 0.55)) + 1e-9, `#${n}`);
+    }
+    const base = hexToHsl(p.cushionColor);
+    if (base.l < 0.42) assert.ok(hexToHsl(p.cushionSecondary).l > base.l - 0.05, `#${n}`);
+  }
+  assert.ok(florals > 10);
 });

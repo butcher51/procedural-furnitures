@@ -1,6 +1,6 @@
 const ROWS = [
   ['R', 'Regenerate (new seed)'],
-  ['1 – 9', 'Switch type'],
+  ['0 – 9', 'Switch type (0 = All)'],
   ['← / →', 'Previous / next item'],
   ['↑ / ↓', 'Row back / forward'],
   ['C / ⇧C', 'Re-roll / step back colours'],

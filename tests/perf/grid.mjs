@@ -78,7 +78,10 @@ try {
     const p95 = sorted[Math.floor(sorted.length * 0.95)];
     const label = await page.locator('#viewport canvas').getAttribute('aria-label');
     const items = Number(/Grid of (\d+)/.exec(label ?? '')?.[1] ?? 0);
-    const expected = await page.evaluate(async (t) => (await import('/src/furniture/registry.js')).get(t).cell.gridSize ** 2, type);
+    const expected = await page.evaluate(async (t) => {
+      if (t === 'all') return (await import('/src/app/mix.js')).ALL_COUNT;
+      return (await import('/src/furniture/registry.js')).get(t).cell.gridSize ** 2;
+    }, type);
     rows.push({ type, 'build ms': buildMs, 'frame avg ms': +avg.toFixed(1), 'frame p95 ms': +p95.toFixed(1), items, frames: frames.length, errors: errors.length, ok: buildMs < 3000 && avg < 17 && !errors.length && items === expected });
     await page.close();
   }

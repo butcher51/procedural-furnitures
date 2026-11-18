@@ -1,4 +1,4 @@
-import { FIELDS, STYLES, footrestApplies, generateStoolParams } from './params.js';
+import { FIELDS, STYLES, footrestApplies, generateStoolParams, patternLabel } from './params.js';
 import { BUILDERS } from './build.js';
 
 const cm = (m) => `${Math.round(m * 100)} cm`;
@@ -48,7 +48,7 @@ export default {
   label: 'Stool',
   plural: 'stools',
   styles: STYLES,
-  cell: { spacing: 1.2, gridSize: 25 },
+  cell: { spacing: 1.2, gridSize: 13 },
   groups: [
     { id: 'style', label: 'Style', fields: FIELDS.style },
     { id: 'shape', label: 'Shape', reads: ['style'], fields: FIELDS.shape },
@@ -64,28 +64,18 @@ export default {
 
   build(p, kit) {
     const m = kit.materials;
-    const frame = m.frame(p.frameColor, p.frameMode);
+    const wood = (color) => m.wood(color, { grain: p.grain, seed: p.seed });
+    const frame = p.frameMode === 'wood' ? wood(p.frameColor) : m.frame(p.frameColor, p.frameMode);
     const mats = { frame };
     if (usesCushion(p)) {
-      mats.cushion = m.surface({
-        color: p.cushionColor,
-        secondary: p.cushionSecondary,
-        pattern: p.pattern,
-        scale: p.patternScale,
-        direction: p.stripeDirection,
-      });
+      mats.cushion = p.pattern === 'none'
+        ? m.solid(p.cushionColor)
+        : m.pattern({ ...p.pattern, colors: p.pattern.kind === 'linen' ? [p.cushionColor] : [p.cushionColor, p.cushionSecondary], seed: p.seed });
     }
     if (p.style === 'drum' && p.hasCushion) mats.body = m.solid(p.bodyColor, 0.9);
     if (p.panMode === 'frame') mats.pan = frame;
-    else if (p.panMode === 'wood' || p.panMode === 'painted') {
-      mats.pan = m.surface({
-        color: p.panColor,
-        secondary: p.panSecondary,
-        pattern: p.panPattern,
-        scale: p.panPatternScale || 1,
-        direction: p.style === 'slab' ? 'horizontal' : p.stripeDirection,
-      });
-    }
+    else if (p.panMode === 'wood') mats.pan = wood(p.panColor);
+    else if (p.panMode === 'painted') mats.pan = m.solid(p.panColor);
     return BUILDERS[p.style](p, mats);
   },
 
@@ -95,7 +85,7 @@ export default {
     const painted = p.panMode === 'painted' || p.frameMode === 'match';
     const swatches = [
       cushion ? p.cushionColor : null,
-      cushion && p.pattern !== 'solid' ? p.cushionSecondary : null,
+      cushion && p.pattern !== 'none' ? p.cushionSecondary : null,
       drum && p.hasCushion ? p.bodyColor : null,
       painted ? p.accentColor : null,
     ].filter(Boolean);
@@ -125,17 +115,17 @@ export default {
     if (cushion) {
       sections.push({
         group: 'pattern',
-        rows: [['Pattern', p.pattern === 'stripes' ? `stripes (${p.stripeDirection})` : p.pattern]],
+        rows: [['Pattern', patternLabel(p.pattern)]],
       });
     }
     const finishRows = [];
     if (!(drum && p.drumBase === 'floor')) {
-      finishRows.push(['Frame', p.frameMode === 'wood' ? `${p.woodName} wood` : p.frameMode]);
+      finishRows.push(['Frame', p.frameMode === 'wood' ? `${p.woodName} wood · ${p.grain} grain` : p.frameMode]);
     }
     if (!drum) {
       finishRows.push([
         'Seat',
-        p.panMode === 'wood' ? `${p.woodName} ${p.panPattern === 'stripes' ? 'planks' : 'wood'}` : p.panMode === 'painted' ? 'painted' : 'matches frame',
+        p.panMode === 'wood' ? `${p.woodName} wood · ${p.grain} grain` : p.panMode === 'painted' ? 'painted' : 'matches frame',
       ]);
     }
     if (finishRows.length) sections.push({ group: 'finish', rows: finishRows });

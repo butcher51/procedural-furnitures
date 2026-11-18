@@ -147,6 +147,7 @@ export function beam(a, b, width, thickness, radius, mat, steps = 2) {
   geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
   geo.computeVertexNormals();
+  geo.userData.grainAxis = dir.toArray();
   const mesh = new THREE.Mesh(geo, mat);
   mesh.position.addVectors(a, b).multiplyScalar(0.5);
   return mesh;

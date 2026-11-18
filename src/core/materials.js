@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { isShaderPattern, patternMaterial, woodHex, woodPattern } from './patterns.js';
 
 const textureCache = new Map();
 
@@ -68,11 +69,21 @@ export function createMaterials({ textureFactory = null } = {}) {
   const standard = (options) => new THREE.MeshStandardMaterial({ flatShading: true, ...options });
   return {
     surface({ color, secondary, pattern = 'solid', scale = 1, direction = 'horizontal', roughness = 0.8 }) {
+      const colors = [color, secondary].filter(Boolean);
+      if (pattern && typeof pattern === 'object') return patternMaterial({ colors, ...pattern }, { roughness });
+      if (isShaderPattern(pattern)) return patternMaterial({ kind: pattern, colors }, { roughness });
       const map =
         pattern === 'solid'
           ? null
           : acquirePatternTexture({ pattern, primary: color, secondary, direction, scale }, textureFactory);
       return map ? standard({ map, roughness }) : standard({ color, roughness });
+    },
+    pattern(spec, { roughness = 0.8, metalness = 0 } = {}) {
+      return patternMaterial(spec, { roughness, metalness });
+    },
+    wood(wood, { grain = 'plain', seed = 0, scale = 1, roughness = 0.7 } = {}) {
+      if (grain === 'none') return standard({ color: woodHex(wood), roughness });
+      return patternMaterial(woodPattern(wood, { grain, seed, scale }), { roughness });
     },
     frame(color, finish) {
       const metal = finish === 'metal';

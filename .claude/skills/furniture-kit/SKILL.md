@@ -18,7 +18,9 @@ Source of truth for architecture: `plan/02-architecture.md`. This skill is the c
 | `src/core/layout.js` | `splitSpan` |
 | `src/core/supports.js` | `legAnchors`, `rowAnchors`, `buildLegs`, `legLines`, `pointOnLeg`, `LEG_PROFILES`, `bentwoodFoot`, `buildCurvyLegs`, `buildStretchers`, `buildApron`, `buildPedestal`, `buildTrestle` |
 | `src/core/materials.js` | `createMaterials({ textureFactory })`, `canvasPatternTexture`, ref-counted pattern texture cache |
-| `src/core/merge.js` | `groupParts`, `mergeByMaterial`, `disposeObject` |
+| `src/core/patterns.js` | Shader patterns: `PATTERN_KINDS`, `PATTERN_KINDS_SPEC`, `WOOD_GRAINS`, `normalizePattern`, `patternMaterial`, `applyPattern`, `injectPattern`, `patternUniforms`, `patternColours`, `woodPattern`, `grainAlong`, `autoGrainAxis`, `writeGrain`, `writeAutoGrain`, `transformGrain`, `usesGrain` |
+| `src/core/merge.js` | `groupParts`, `mergeByMaterial`, `fillMissingAttributes`, `disposeObject` |
+| `dev/patterns.html` | Pattern board (every kind on boxes, cylinder, cushion, sofa block, wood bench/table/frame) at close-up, item and grid distance. `node scripts/pattern-board.mjs [--out out/pattern-board.png] [--parts 5]`; `--perf chair,sofa` measures full grids with and without patterns |
 | `src/core/item.js` | `itemSeed`, `generateItem(def, sceneSeed, n, rerolls, dna)`, `buildItem(def, params, kit)`, `rerollableGroups`, `fixedGroups`, `groupApplies(def, groupId, params)`, `canRoll(def, groupId, params)`, `shortcutGroups(def)` (C/S key targets) |
 | `src/core/kit.js` | `createKit({ textureFactory })` → `{ materials }` |
 | `src/furniture/registry.js` | `register`, `get`, `has`, `list`; one import + `register()` line per type |
@@ -137,18 +139,53 @@ export default {
 | `buildTrestle({ length, depth, top, kind, inset, footLength, footHeight, beamWidth, postDepth = beamWidth, cleatHeight, cleatLength = 0.8·depth, stretcherHeight, stretcher = true, radius = 0.006 }, mat)` (supports) | Two `beam` frames at x = ±(length/2 − inset) (foot, posts, cleat) plus one long stretcher at z = 0 | `kind` `'I'`: one `beamWidth × postDepth` post. `'A'`: two slanted posts (±0.38·footLength → ±0.2·cleatLength) and a crossbar at `stretcherHeight`. `'X'`: crossed beams; the stretcher sits at the crossing and `stretcherHeight` is ignored. Slanted ends are pulled in so corners stay within y 0…`top`. 308–484 tris. |
 | `bentwoodFoot(path, radius, sides, mat)` (supports) | Ferrule foot from y = 0 up past the open end of a tube leg | `path` is the tube curve (`mesh.geometry.parameters.path`); the end centre must sit `radius` above the floor. 4·sides triangles. |
 | `buildCurvyLegs(p, mats, fp)` (supports) | Bentwood legs (sabre/cabriole/bow) on ferrule feet + optional ring | Needs `p.legCurve`, `p.hasRing`, `p.ringHeight`. Feet stand on y = 0 exactly. |
-| `mergeByMaterial(root)` (merge) | One mesh per material | Disposes source geometries; converts indexed → non-indexed. |
+| `mergeByMaterial(root)` (merge) | One mesh per material | Disposes source geometries; converts indexed → non-indexed. For wood-pattern materials it writes `writeAutoGrain` on parts without a `grain` attribute and rotates every `grain` into item space; for other materials it drops `grain`. Attributes only some parts carry are zero-filled (`fillMissingAttributes`). |
+| `grainAlong(object, axis = 'auto')` (patterns) | Writes the per-vertex `grain` attribute (wood fibre direction) on every mesh under `object`; returns `object` | `axis` is `'x'`/`'y'`/`'z'`, `[x, y, z]` or a `Vector3` **in `object`'s own frame** (children get it converted into their frames). Call it on the part as built (after its rotation is set is fine, the axis is local), before `build` returns. `'auto'` = `autoGrainAxis`, tube tangents for `tube`. Gotchas: it mutates the geometry, so don't share one geometry between parts with different grain; square-ish slabs (seats, round tops) need an explicit axis because auto picks the longest bbox side; no need to call it for beams, struts and legs (auto is right). |
+| `autoGrainAxis(geometry)` (patterns) | `Vector3`: `geometry.userData.grainAxis` when set (`beam` sets it to its direction), else the longest local bbox axis | Local frame of the geometry. |
+| `fillMissingAttributes(geometries)` (merge) | Adds zero-filled attributes so `mergeGeometries` accepts mixed parts | Used by `mergeByMaterial`; a missing `uv` becomes (0, 0). |
 | `disposeObject(root)` (merge) | Frees geometry, materials, maps | Call before dropping an item. |
 
 ## Materials
 
 `kit.materials` (from `createMaterials`), all `MeshStandardMaterial` with `flatShading: true`:
 
-- `surface({ color, secondary, pattern: 'solid'|'stripes'|'checker', scale, direction: 'horizontal'|'vertical', roughness = 0.8 })` — patterned via the texture factory; plain colour when the factory is absent (Node).
+- `surface({ color, secondary, pattern: 'solid'|'stripes'|'checker', scale, direction: 'horizontal'|'vertical', roughness = 0.8 })` — canvas texture via the texture factory (chair, legacy); plain colour when the factory is absent (Node). `pattern` may also be a shader kind name (`'dots'`, defaults) or a spec object (`{ kind: 'floral', spacing: 0.1 }`); then `[color, secondary]` become the spec's `colors` unless the spec has its own, and `scale`/`direction` are ignored.
+- `pattern(spec, { roughness = 0.8, metalness = 0 })` — shader pattern material (see Shader patterns).
+- `wood(wood, { grain = 'plain'|'fine'|'bold'|'none', seed = 0, scale = 1, roughness = 0.7 })` — wood grain from a `pickWood`/`WOODS` swatch `{ h, s, l }` or a hex; base = `hsl(h, s, l)`, darker late-wood and lighter tones via `shade`. `'none'` returns a plain material in the base colour.
 - `frame(color, finish)` — `finish === 'metal'` → roughness 0.35, metalness 0.6, else roughness 0.7.
 - `solid(color, roughness = 0.9)` — upholstered bodies and anything plain.
 
 Create a fresh material per item per role (merge groups by material identity). Pattern textures are cached and ref-counted; `disposeObject` releases them, so never call `texture.dispose()` yourself. Planned roles: `glass`, `emissive`.
+
+### Shader patterns (`src/core/patterns.js`)
+
+GLSL injected into `MeshStandardMaterial` with `onBeforeCompile` (flat shading, roughness, shadows unchanged). `customProgramCacheKey` is `pattern-<kind>-1`, so every item shares one program per kind; colours, sizes and seed are per-material uniforms (`uPatA…D`, `uPatP`, `uPatSeed`). No textures, no UVs, no extra triangles.
+
+- **Item space.** Patterns read the merged mesh's local `position` (= item space), so an item looks the same at any grid cell and after a rebuild. Sizes are meters: a 5 cm dot is 5 cm on a stool and on a sofa.
+- **Projection.** 2D kinds project on the dominant axis of each face's own normal (from `dFdx`/`dFdy`, so vertex normals don't matter): x faces use (z, y), y faces (x, z), z faces (x, y). The normal components are weighted (x 1, y 1.3, z 1.19) before the comparison, so ties fall at ~50° (x/z), ~52° (x/y) and ~47.5° (z/y), away from the 22.5/30/36/45/54/60° facets of lathes, drums and 2–3 segment bevels: a 45° facet always gets the same axis and never flips per pixel. This is triplanar with a hard switch; blended triplanar ghosts half-patterns on 45° bevel facets, and on flat-shaded facets the hard switch reads as printed fabric (motifs are still cut at bevel facet edges).
+- **Anti-aliasing.** Edges are one pixel wide. The footprint (`patFootprint`) is the geometric mean of the two screen-derivative lengths, floored at a quarter of the larger one, so a foreshortened top keeps its detail about as long as a side seen square-on, without shimmer. Detail fades to its average colour once it gets smaller than ~1–2 px, so grids at 45 m show calm flat colour and no moiré.
+- **Spec** (`userData.pattern`, plain JSON): `{ kind, colors: [hex…], scale = 1, seed = 0, …kind fields }`. `colors[0]` is required (`#rrggbb`); missing colours are derived from it with `shade` (direction flips on very dark/light bases so there is always contrast). `scale` multiplies every length field. Out-of-range numbers are clamped, unknown enum values fall back to the first value. `seed` (number or string) shifts the pattern phase; pass `params.seed` so neighbours differ. `material.color` = `colors[0]`.
+- **Colour rule.** Every explicit colour must come from the pickers (`colourIsCalm`); `tests/unit/colour-calm.test.js` checks `userData.pattern.colors` of every material.
+
+| Kind | Colours `[0, 1, 2, 3]` | Fields (default, range; lengths in m) | Use |
+|---|---|---|---|
+| `wood` | base, late wood (−0.1 l), light (+0.06 l) | `ringSpacing` 0.009 (0.002–0.05), `fibre` 0.5 (0–1), `figure` 0.5 (0–1, ring waviness) | All wood parts; needs grain (below). Presets `WOOD_GRAINS`: `fine` 5 mm, `plain` 9 mm, `bold` 15 mm |
+| `dots` | ground, dot | `spacing` 0.05 (0.008–0.4), `size` 0.2 (radius ÷ spacing, 0.05–0.45), `layout` `'offset'` \| `'grid'` | Polka cushions, pillows, seat pads |
+| `floral` | ground, petal, centre, leaf | `spacing` 0.11 (cell, 0.03–0.5), `petals` 5 (4–7), `size` 0.24 (0.12–0.28), `leaves` true | Pillows, cottage upholstery |
+| `gingham` | ground, band, overcheck line | `spacing` 0.02 (check, 0.004–0.2), `overcheck` 0 (line width in checks, 0–0.3; > 0 adds a line every 4 checks) | Seat pads, café chairs, cushions |
+| `ticking` | ground, stripe | `spacing` 0.03 (0.004–0.3), `width` 0.12 (÷ spacing, 0.02–0.45), `direction` `'vertical'` \| `'horizontal'`, `double` false | Pinstripe / ticking upholstery |
+| `herringbone` | ground, twill line | `band` 0.03 (zigzag column, 0.006–0.2), `spacing` 0.01 (twill line period, 0.002–0.05), `width` 0.45 (0.1–0.7) | Tweed sofas, armchairs |
+| `terrazzo` | ground, chip, large chip | `size` 0.014 (chip cell, 0.003–0.08), `density` 0.6 (0.1–1) | Stone tops (`STONE_TONES`), plinths |
+| `linen` | base, darker slub, lighter slub | `thread` 0.004 (0.001–0.02), `strength` 0.4 (0–1), `texture` `'linen'` \| `'boucle'` | Plain fabric micro-texture; averages to `colors[0]` at distance. Default slubs are ±0.04 l; bouclé loops are ~0.7·`thread` (mm scale). Pass only `[base]` as colours: a pattern secondary as slub colour reads as camouflage |
+
+**Wood grain through merge.** The wood shader reads a per-vertex `grain` attribute (unit vector, fibre direction). `grainAlong(part, axis)` writes it in the part's local frame; `mergeByMaterial` rotates it with the part's world matrix into item space, writes `autoGrainAxis` for wood parts that have none (beams use their direction, other parts their longest bbox side, tubes their tangents), and drops it from non-wood meshes. Rings are circles around a slightly tilted copy of the grain axis (centre ~0.3 m off the item origin, tilt ~0.08), with ring-spacing noise, a low-frequency sweep scaled by `figure`, and darker growth zones every ~4 rings that stay visible at item distance; flat faces along the grain show cathedral arcs and uneven bands instead of pinstripes, end faces show arcs. Ring and fibre contrast is boosted up to 1.6× on dark woods so walnut still shows grain. Gotcha: set the axis explicitly on near-square slabs (seat panels, round tops), or the grain picks whichever side happens to be longer, and it may flip between seeds.
+
+### How to adopt shader patterns in a generator
+
+1. Keep colour picking as is (pickers, hex in params). Add pattern choices to params as plain data, e.g. `seatPattern: { kind: 'dots', spacing: 0.05, layout: 'offset' }` or `'none'`, rolled in the group that owns the fabric (usually `pattern` or `palette`); wood parts use `pickWood` plus a `grain` field (`'fine'|'plain'|'bold'`).
+2. In `build`: `const wood = kit.materials.wood(p.wood, { grain: p.grain, seed: p.seed })`, `const fabric = p.seatPattern === 'none' ? kit.materials.solid(p.seatColor) : kit.materials.pattern({ ...p.seatPattern, colors: [p.seatColor, p.patternColor], seed: p.seed })`. One material per role, as before (≤ 4 draw calls).
+3. Call `grainAlong(part, 'x')` on slabs/tops whose long axis is ambiguous; slats, legs, rails and beams need nothing.
+4. Check `node scripts/pattern-board.mjs` for the look, snapshot your type, run the calm test. Don't touch the chair (golden).
 
 ### Colour
 
@@ -167,6 +204,7 @@ Create a fresh material per item per role (merge groups by material identity). P
 | Triangles | ≤ 6k | p50 2.6k · p95 4.2k · max 5.4k (classic max 5.4k, curvy max 1.8k) |
 | Build time | ≤ 4 ms median (browser) | Node p50 2.8 ms · p95 5.1 ms |
 | Textures | 64×64, shared per pattern+palette key | cached (ref-counted) |
+| Shader patterns | No textures; one program per kind (8 kinds max); no extra triangles or draw calls | Full grids with a pattern on every role stay at 60 fps (RTX 3070, `scripts/pattern-board.mjs --perf`) |
 
 Measure with `npm run metrics` (chair only until the registry exists).
 

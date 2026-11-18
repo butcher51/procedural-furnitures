@@ -44,6 +44,7 @@ export function createStage(viewport) {
   let shadowDirty = true;
   let tween = null;
   let inset = 0;
+  let insetLeft = 0;
   let animateMoves = true;
   const overview = { position: new THREE.Vector3(), target: new THREE.Vector3() };
 
@@ -52,10 +53,8 @@ export function createStage(viewport) {
     if (shadow) shadowDirty = true;
   };
 
-  function layout({ gridSize, spacing, single }) {
-    const size = single ? 1 : gridSize;
-    const extent = ((size - 1) / 2) * spacing + 1;
-    const scale = spacing / 1.7;
+  function layout({ side, floor, divisions, scale, single, fit = 1 }) {
+    const extent = Math.max(side, 0) / 2 + 1;
 
     camera.far = extent * 10 + 50;
     camera.updateProjectionMatrix();
@@ -73,7 +72,7 @@ export function createStage(viewport) {
       floorGrid.geometry.dispose();
       floorGrid.material.dispose();
     }
-    floorGrid = new THREE.GridHelper(gridSize * spacing, gridSize * 4, '#d8d1c5', '#e2ddd4');
+    floorGrid = new THREE.GridHelper(floor ?? side + 1, divisions, '#d8d1c5', '#e2ddd4');
     floorGrid.position.y = 0.001;
     floorGrid.visible = !single;
     scene.add(floorGrid);
@@ -82,7 +81,16 @@ export function createStage(viewport) {
       overview.position.set(1.45, 1.1, 1.95).multiplyScalar(scale);
       overview.target.set(0, 0.42 * scale, 0);
     } else {
-      overview.position.set(extent * 1.25, extent * 1.2, extent * 1.7);
+      const { clientWidth: w, clientHeight: h } = viewport;
+      const available = w && h ? Math.max(w - insetLeft, 1) / Math.max(h - inset, 1) : 1.6;
+      const direction = new THREE.Vector3(1.25, 1.2, 1.7);
+      const preferred = direction.length() * extent * fit;
+      const vHalf = THREE.MathUtils.degToRad(camera.fov) / 2;
+      const hHalf = Math.atan(Math.tan(vHalf) * available);
+      const fitWidth = (extent * 1.4 * fit) / Math.sin(hHalf);
+      const distance = Math.max(preferred, fitWidth);
+      controls.maxDistance = Math.max(controls.maxDistance, distance * 1.5);
+      overview.position.copy(direction.normalize().multiplyScalar(distance));
       overview.target.set(0, 0.3, 0);
     }
     tween = null;
@@ -143,13 +151,20 @@ export function createStage(viewport) {
 
   function applyViewOffset() {
     const { clientWidth: w, clientHeight: h } = viewport;
-    if (inset > 0 && w > 0) camera.setViewOffset(w, h, 0, inset / 2, w, h);
+    if ((inset > 0 || insetLeft > 0) && w > 0) camera.setViewOffset(w, h, -insetLeft / 2, inset / 2, w, h);
     else camera.clearViewOffset();
     camera.updateProjectionMatrix();
   }
 
   function setInset(px) {
     inset = px;
+    applyViewOffset();
+    invalidate();
+  }
+
+  function setInsetLeft(px) {
+    if (px === insetLeft) return;
+    insetLeft = px;
     applyViewOffset();
     invalidate();
   }
@@ -203,6 +218,7 @@ export function createStage(viewport) {
     resetCamera,
     focus,
     setInset,
+    setInsetLeft,
     resize,
     frame,
     renderNow,

@@ -90,6 +90,11 @@ A segmented control in the header with one chip per registered type, in registry
 `registry.list()`, so the shell never names a type. Types whose generator hasn't landed yet get no chip. Disabled
 "coming soon" chips would be noise in every screenshot until 3.5 merges.
 
+The first chip is **All** (key `0`, `?type=all`): 120 items, each picking its type from `${seed}-all-${n}` with equal
+weights and generated with `generateItem(def, `${seed}-all`, n, rerolls)`. Items are row-packed by measured footprint
+(`src/app/layout.js`, gap 0.3 m, roughly square, centred) and repacked when a re-roll changes a footprint. Loader:
+`Generating furniture… n / 120`. Grid sizes since 3.5.4: chair 13, stool 13, table 9, bench 9, sofa 9.
+
 | Part | Spec |
 |---|---|
 | Track | `--bg` fill, 1px `--border`, radius `--r-panel`, padding 2px, gap 2px |
@@ -302,7 +307,7 @@ A global `keydown` handler on `document`. It ignores the event when:
 | Key | Action | Notes |
 |---|---|---|
 | `R` | Regenerate (new seed, same type) | Clears rolls and item |
-| `1`–`9` | Switch type by registry order | Wave 1: 1 Chair, 2 Stool, 3 Table, 4 Bench, 5 Sofa. Unused numbers do nothing |
+| `0`–`9` | Switch type by chip order | 0 All, 1 Chair, 2 Stool, 3 Table, 4 Bench, 5 Sofa. Unused numbers do nothing |
 | `←` / `→` | Previous / next item | Grid: number ±1, wrapping; if zoomed, the camera follows. Solo: steps the solo item |
 | `↑` / `↓` | One row back / forward | Grid only (number ∓/± gridSize, clamped). Not in plan/03, but cheap and expected once ←/→ exist |
 | `C` / `Shift+C` | Re-roll / step back the selected item's `palette` group | No-op if the type has no `palette` group or it isn't rerollable |
@@ -333,7 +338,7 @@ The grammar is unchanged from doc 02 and `src/app/url.js`:
 
 | Param | Example | Default | Notes |
 |---|---|---|---|
-| `type` | `table` | `chair` (omitted) | Unknown → chair + toast, URL rewritten |
+| `type` | `table`, `all` | `chair` (omitted) | `all` is the mixed showroom. Unknown → chair + toast, URL rewritten |
 | `seed` | `abc123` | random 6 chars | Always written |
 | `item` | `42` | none → centre item | 1-based. Out of range → dropped |
 | `view` | `single` | grid (omitted) | Solo |

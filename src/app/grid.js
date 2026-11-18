@@ -1,10 +1,15 @@
 import * as THREE from 'three';
 import { buildItem, generateItem } from '../core/item.js';
 import { disposeObject } from '../core/merge.js';
+import { packRows, verticalNeighbor } from './layout.js';
 
 const RING_DELAY = 100;
 const POP_DURATION = 450;
 const FRAME_BUDGET = 30;
+const PACK_GAP = 0.3;
+const MARKER_BASE = 0.65;
+const MARKER_PAD = 0.14;
+const MIXED_REVEAL = 1200;
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve));
 
@@ -21,14 +26,23 @@ export function rollKey(rolls) {
     .join('.');
 }
 
+function measure(object) {
+  object.position.set(0, 0, 0);
+  object.scale.setScalar(1);
+  object.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(object);
+  if (box.isEmpty()) return { w: 0.5, d: 0.5, cx: 0, cz: 0 };
+  return { w: box.max.x - box.min.x, d: box.max.z - box.min.z, cx: (box.max.x + box.min.x) / 2, cz: (box.max.z + box.min.z) / 2 };
+}
+
 export function createShowroom({ scene, kit, onProgress }) {
   let items = [];
   let generation = 0;
-  let definition = null;
   let animate = true;
-  let seed = '';
   let overlays = true;
   let markerWanted = false;
+  let mixed = false;
+  let packed = { rows: [], positions: [], width: 0, depth: 0 };
 
   const group = new THREE.Group();
   scene.add(group);
@@ -58,84 +72,123 @@ export function createShowroom({ scene, kit, onProgress }) {
     generation++;
   }
 
-  function sizeMarker(spacing) {
-    const scale = spacing / 1.7;
-    marker.scale.set(scale, scale, 1);
-  }
-
   function placeDot(item, rerolled) {
     if (!rerolled) {
       if (item.dot) group.remove(item.dot);
       item.dot = null;
       return;
     }
-    if (item.dot) return;
-    const offset = definition.cell.spacing * 0.37;
-    item.dot = new THREE.Mesh(dotGeometry, dotMaterial);
-    item.dot.rotation.x = -Math.PI / 2;
-    item.dot.position.set(item.object.position.x + offset * 0.72, 0.004, item.object.position.z + offset * 0.72);
-    item.dot.visible = overlays;
-    group.add(item.dot);
+    if (!item.dot) {
+      item.dot = new THREE.Mesh(dotGeometry, dotMaterial);
+      item.dot.rotation.x = -Math.PI / 2;
+      item.dot.visible = overlays;
+      group.add(item.dot);
+    }
+    const offset = item.markerRadius * 0.7;
+    item.dot.position.set(item.center.x + offset, 0.004, item.center.z + offset);
   }
 
-  function makeItem(number, rolls) {
-    const params = generateItem(definition, seed, number, rolls);
+  function makeItem(definition, sceneSeed, number, rolls) {
+    const params = generateItem(definition, sceneSeed, number, rolls);
     const object = buildItem(definition, params, kit);
     return { params, object };
+  }
+
+  function place(item, x, z) {
+    item.center = { x, z };
+    item.object.position.set(x - item.foot.cx, 0, z - item.foot.cz);
+  }
+
+  function relayout() {
+    const sizes = items.map((item) => ({ w: item.foot.w, d: item.foot.d }));
+    packed = packRows(sizes, { gap: PACK_GAP });
+    items.forEach((item, i) => {
+      place(item, packed.positions[i].x, packed.positions[i].z);
+      item.markerRadius = Math.max(item.foot.w, item.foot.d) / 2 + MARKER_PAD;
+      if (item.dot) placeDot(item, true);
+    });
   }
 
   async function populate(options) {
     const id = ++generation;
     clear();
-    definition = options.definition;
     animate = options.animate;
-    seed = options.seed;
-    sizeMarker(definition.cell.spacing);
+    mixed = Boolean(options.mixed);
 
-    const size = options.single ? 1 : definition.cell.gridSize;
-    const total = size * size;
+    const single = options.single;
+    const size = single ? 1 : options.gridSize;
+    const total = single ? 1 : options.count;
     const center = (size - 1) / 2;
-    const { spacing } = definition.cell;
+    const { spacing } = options;
     const built = [];
     const abandon = () => {
       built.forEach((item) => disposeObject(item.object));
       return false;
     };
-    onProgress(0, total, definition);
+    onProgress(0, total);
     await nextFrame();
     if (id !== generation) return false;
     let sliceStart = performance.now();
-    for (let row = 0; row < size; row++) {
-      for (let col = 0; col < size; col++) {
-        const number = options.single ? options.item ?? 1 : built.length + 1;
-        const rolls = options.rerolls.get(number) ?? {};
-        const { params, object } = makeItem(number, rolls);
-        object.position.set((col - center) * spacing, 0, (row - center) * spacing);
-        object.userData.itemIndex = built.length;
-        object.visible = false;
-        const ring = Math.max(Math.abs(row - center), Math.abs(col - center));
-        built.push({ number, object, params, ring, revealAt: 0, popped: false, dot: null, rollKey: rollKey(rolls) });
+    for (let n = 0; n < total; n++) {
+      const row = Math.floor(n / size);
+      const col = n % size;
+      const number = single ? options.item ?? 1 : n + 1;
+      const rolls = options.rerolls.get(number) ?? {};
+      const { definition, seed } = options.resolve(number);
+      const { params, object } = makeItem(definition, seed, number, rolls);
+      const foot = mixed ? measure(object) : { w: 0, d: 0, cx: 0, cz: 0 };
+      object.userData.itemIndex = built.length;
+      object.visible = false;
+      const ring = mixed ? 0 : Math.max(Math.abs(row - center), Math.abs(col - center));
+      built.push({
+        number,
+        definition,
+        seed,
+        object,
+        params,
+        foot,
+        ring,
+        center: { x: 0, z: 0 },
+        markerRadius: (MARKER_BASE * spacing) / 1.7,
+        revealAt: 0,
+        popped: false,
+        dot: null,
+        rollKey: rollKey(rolls),
+      });
+      if (!mixed) {
+        built[n].center = { x: (col - center) * spacing, z: (row - center) * spacing };
+        object.position.set(built[n].center.x, 0, built[n].center.z);
+      }
 
-        if (performance.now() - sliceStart > FRAME_BUDGET) {
-          onProgress(built.length, total, definition);
-          await nextFrame();
-          if (id !== generation) return abandon();
-          sliceStart = performance.now();
-        }
+      if (performance.now() - sliceStart > FRAME_BUDGET) {
+        onProgress(built.length, total);
+        await nextFrame();
+        if (id !== generation) return abandon();
+        sliceStart = performance.now();
       }
     }
     if (id !== generation) return abandon();
-    onProgress(total, total, definition);
+    onProgress(total, total);
+
+    items = built;
+    if (mixed) {
+      relayout();
+      let farthest = 0;
+      for (const item of items) {
+        item.ring = Math.hypot(item.center.x, item.center.z);
+        farthest = Math.max(farthest, item.ring);
+      }
+      for (const item of items) item.ring = item.ring / (farthest || 1);
+    }
 
     const start = performance.now();
-    const ringDelay = RING_DELAY * Math.min(1, 12 / Math.max(center, 1));
+    const ringDelay = mixed ? MIXED_REVEAL : RING_DELAY * Math.min(1, 12 / Math.max(center, 1));
     for (const item of built) {
       item.revealAt = start + item.ring * ringDelay;
       reveal(item, !animate);
       group.add(item.object);
-      if (!options.single) placeDot(item, rollKey(options.rerolls.get(item.number)) !== '');
+      if (!single) placeDot(item, rollKey(options.rerolls.get(item.number)) !== '');
     }
-    items = built;
     return true;
   }
 
@@ -147,7 +200,9 @@ export function createShowroom({ scene, kit, onProgress }) {
 
   function rebuild(index, rolls, { quiet = false } = {}) {
     const item = items[index];
-    const { params, object } = makeItem(item.number, rolls);
+    const { params, object } = makeItem(item.definition, item.seed, item.number, rolls);
+    const before = item.foot;
+    item.foot = mixed ? measure(object) : before;
     object.position.copy(item.object.position);
     object.userData.itemIndex = index;
     group.remove(item.object);
@@ -157,6 +212,9 @@ export function createShowroom({ scene, kit, onProgress }) {
     item.params = params;
     item.rollKey = rollKey(rolls);
     item.revealAt = performance.now();
+    const moved = mixed && ['w', 'd', 'cx', 'cz'].some((k) => Math.abs(item.foot[k] - before[k]) > 0.002);
+    if (moved) relayout();
+    else if (mixed) place(item, item.center.x, item.center.z);
     reveal(item, quiet || !animate);
     placeDot(item, item.rollKey !== '');
     return item;
@@ -183,7 +241,11 @@ export function createShowroom({ scene, kit, onProgress }) {
   function mark(index, visible = true) {
     const item = items[index];
     markerWanted = visible && Boolean(item);
-    if (item) marker.position.set(item.object.position.x, 0.003, item.object.position.z);
+    if (item) {
+      marker.position.set(item.center.x, 0.003, item.center.z);
+      const scale = item.markerRadius / MARKER_BASE;
+      marker.scale.set(scale, scale, 1);
+    }
     applyMarker();
   }
 
@@ -206,17 +268,15 @@ export function createShowroom({ scene, kit, onProgress }) {
     cancel,
     setOverlays,
     setVisible,
+    neighbor: (index, direction) => verticalNeighbor(packed.rows, packed.positions, index, direction),
     setAnimate(value) {
       animate = value;
     },
     get items() {
       return items;
     },
-    get definition() {
-      return definition;
-    },
-    get seed() {
-      return seed;
+    get extent() {
+      return { width: packed.width, depth: packed.depth };
     },
   };
 }

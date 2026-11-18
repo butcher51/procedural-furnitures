@@ -184,6 +184,7 @@ export function paletteParams(r, style) {
     bodyMode === 'match' ? shade(base, -lerp([0.06, 0.12], bodyJitter)).hex :
     capSaturation(base.h, 0.08, base.l > 0.5 ? lerp([0.26, 0.34], bodyJitter) : lerp([0.74, 0.82], bodyJitter)).hex;
   const accent = accentColor(r, base);
+  const pillowMode = HARMONY_MODES[Math.min(HARMONY_MODES.length - 1, Math.floor(r.next() * HARMONY_MODES.length))];
   return {
     paletteMood,
     primary: base.hex,
@@ -191,15 +192,52 @@ export function paletteParams(r, style) {
     bodyMode,
     bodyColor,
     accentColor: accent.hex,
+    pillowSecondary: harmoniousSecondary(accent, pillowMode).hex,
+    pillowPattern: pillowPatternParams(r),
   };
 }
 
-export function patternParams(r) {
-  return {
-    pattern: weightedPick(r, { solid: 0.6, stripes: 0.25, checker: 0.15 }),
-    patternScale: r.int(2, 6),
-    stripeDirection: r.pick(['horizontal', 'vertical']),
-  };
+const FABRIC_TEXTURE = { linen: 0.45, boucle: 0.3, flat: 0.25 };
+const SURFACE_KINDS = { dots: 0.14, gingham: 0.22, ticking: 0.24, herringbone: 0.24, floral: 0.16 };
+const PILLOW_KINDS = { dots: 0.2, gingham: 0.2, ticking: 0.17, herringbone: 0.1, floral: 0.33 };
+const SURFACE_PATTERN_CHANCE = 0.26;
+const SURFACE_PATTERN_CHANCE_WITH_PATTERNED_PILLOWS = 0.08;
+const PILLOW_PATTERN_CHANCE = 0.55;
+
+function patternSpec(kind, t, sizes, big) {
+  const k = big ? 1 : 0;
+  const [lo, hi] = sizes[kind][k];
+  const size = lerp([lo, hi], t[0]);
+  const round = (v) => Math.round(v * 1000) / 1000;
+  if (kind === 'dots') return { kind, spacing: round(size), size: lerp([0.18, 0.26], t[1]), layout: t[2] < 0.7 ? 'offset' : 'grid' };
+  if (kind === 'gingham') return { kind, spacing: round(size), overcheck: t[1] < 0.4 ? round(lerp([0.1, 0.18], t[2])) : 0 };
+  if (kind === 'ticking') return { kind, spacing: round(size), width: lerp([0.1, 0.18], t[1]), direction: 'vertical', double: t[2] < 0.25 };
+  if (kind === 'herringbone') return { kind, band: round(size), spacing: round(size / 3), width: lerp([0.4, 0.5], t[1]) };
+  return { kind, spacing: round(size), petals: 5 + Math.floor(t[1] * 3), size: lerp([0.2, 0.26], t[2]), leaves: t[3] < 0.8 };
+}
+
+const PATTERN_SIZES = {
+  dots: [[0.035, 0.055], [0.03, 0.05]],
+  gingham: [[0.02, 0.032], [0.02, 0.035]],
+  ticking: [[0.026, 0.04], [0.022, 0.034]],
+  herringbone: [[0.026, 0.04], [0.022, 0.034]],
+  floral: [[0.12, 0.17], [0.09, 0.13]],
+};
+
+export function pillowPatternParams(r) {
+  const patterned = r.chance(PILLOW_PATTERN_CHANCE);
+  const kind = weightedPick(r, PILLOW_KINDS);
+  const t = draws(r, 4);
+  return patterned ? patternSpec(kind, t, PATTERN_SIZES, true) : 'none';
+}
+
+export function patternParams(r, pillowsPatterned) {
+  const fabricTexture = weightedPick(r, FABRIC_TEXTURE);
+  const patterned = r.chance(pillowsPatterned ? SURFACE_PATTERN_CHANCE_WITH_PATTERNED_PILLOWS : SURFACE_PATTERN_CHANCE);
+  const kind = weightedPick(r, SURFACE_KINDS);
+  const t = draws(r, 4);
+  const thread = Math.round(lerp([0.8, 1.3], r.next()) * 1000) / 1000;
+  return { fabricTexture, fabricThread: thread, fabricPattern: patterned ? patternSpec(kind, t, PATTERN_SIZES, false) : 'none' };
 }
 
 const WOOD_CHANCE = { sofa: 0.55, loveseat: 0.6, midcentury: 0.75, chaise: 0.7, sectional: 0.45 };
@@ -207,6 +245,7 @@ const WOOD_CHANCE = { sofa: 0.55, loveseat: 0.6, midcentury: 0.75, chaise: 0.7, 
 export function finishParams(r, style, legStyle, primary) {
   const t = draws(r, 6);
   const wood = pickWood(r);
+  const grain = weightedPick(r, { plain: 0.5, fine: 0.3, bold: 0.2 });
   let frameMode;
   if (legStyle === 'sled') frameMode = t[0] < 0.6 ? 'metal' : 'black';
   else if (legStyle === 'plinth') frameMode = t[0] < 0.6 ? 'black' : 'wood';
@@ -220,7 +259,7 @@ export function finishParams(r, style, legStyle, primary) {
     brass: capSaturation(0.11, lerp([0.45, 0.55], t[3]), lerp([0.5, 0.58], t[4])).hex,
     match: shade(swatch(primary), -0.2, 0.8).hex,
   }[frameMode];
-  return { frameMode, frameColor, woodName: frameMode === 'wood' ? wood.name : null };
+  return { frameMode, frameColor, woodName: frameMode === 'wood' ? wood.name : null, grain: frameMode === 'wood' ? grain : 'none' };
 }
 
 export function generateSofaParams(g) {
@@ -229,7 +268,7 @@ export function generateSofaParams(g) {
   const cushions = g.roll('cushions', (r) => cushionParams(r, style, shape));
   const legs = g.roll('legs', (r) => legParams(r, style, shape, cushions));
   const palette = g.roll('palette', (r) => paletteParams(r, style));
-  const pattern = g.roll('pattern', patternParams);
+  const pattern = g.roll('pattern', (r) => patternParams(r, palette.pillowPattern !== 'none'));
   const finish = g.roll('finish', (r) => finishParams(r, style, legs.legStyle, palette.primary));
   return { seed: g.seed, type: 'sofa', style, ...shape, ...cushions, ...legs, ...palette, ...pattern, ...finish };
 }

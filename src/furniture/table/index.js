@@ -17,13 +17,13 @@ function baseLabel(p) {
 }
 
 function topFinishLabel(p) {
-  if (p.topFinish === 'wood') return `${p.woodName} wood${p.topPattern === 'stripes' ? ' (planks)' : ''}`;
-  if (p.topFinish === 'stone') return p.stoneName;
+  if (p.topFinish === 'wood') return `${p.woodName} wood · ${p.grain} grain`;
+  if (p.topFinish === 'stone') return `${p.stoneName} · ${p.stonePattern}`;
   return 'painted';
 }
 
 function baseFinishLabel(p) {
-  return p.baseMode === 'wood' ? `${p.woodName} wood` : p.baseMode;
+  return p.baseMode === 'wood' ? `${p.woodName} wood · ${p.grain} grain` : p.baseMode;
 }
 
 function baseRows(p) {
@@ -47,7 +47,7 @@ export default {
   label: 'Table',
   plural: 'tables',
   styles: STYLE_WEIGHTS,
-  cell: { spacing: 2.3, gridSize: 17 },
+  cell: { spacing: 2.3, gridSize: 9 },
   groups: [
     { id: 'style', label: 'Style', fields: ['style'] },
     {
@@ -77,8 +77,7 @@ export default {
       label: 'Finish',
       reads: ['style', 'palette'],
       fields: [
-        'topFinish', 'woodName', 'stoneName', 'baseMode', 'topPattern', 'topPatternScale', 'topColor', 'topSecondary',
-        'baseColor',
+        'topFinish', 'woodName', 'stoneName', 'baseMode', 'grain', 'stonePattern', 'topColor', 'baseColor',
       ],
     },
   ],
@@ -93,8 +92,7 @@ export default {
 
   describe(p) {
     const round = p.topShape === 'round';
-    const planks = p.topPattern === 'stripes';
-    const swatches = [p.topColor, planks ? p.topSecondary : null, p.baseColor].filter(Boolean);
+    const swatches = [p.topColor, p.baseColor];
     const sections = [
       { group: 'style', rows: [['Style', styleLabel(p)]] },
       {

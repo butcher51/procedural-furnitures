@@ -233,6 +233,24 @@ const FRAME_MODE = {
   upholstered: { wood: 0.6, black: 0.25, metal: 0.15 },
 };
 
+const GRAINS = { plain: 0.5, fine: 0.3, bold: 0.2 };
+
+const FABRIC_KINDS = { linen: 0.36, boucle: 0.28, herringbone: 0.07, ticking: 0.08, gingham: 0.07, dots: 0.07, floral: 0.07 };
+
+function rollFabricPattern(r) {
+  const kind = weightedPick(r, FABRIC_KINDS);
+  const thread = r.range(0.003, 0.006);
+  const strength = r.range(0.45, 0.75);
+  const dots = { spacing: r.range(0.035, 0.07), size: r.range(0.16, 0.26), layout: r.pick(['offset', 'grid']) };
+  const floral = { spacing: r.range(0.08, 0.13), petals: r.int(5, 6), size: r.range(0.2, 0.26) };
+  const gingham = { spacing: r.range(0.012, 0.025), overcheck: r.chance(0.4) ? 0.1 : 0 };
+  const ticking = { spacing: r.range(0.02, 0.04), width: r.range(0.1, 0.2), direction: r.pick(['vertical', 'horizontal']), double: r.chance(0.3) };
+  const herringbone = { band: r.range(0.02, 0.04), spacing: r.range(0.006, 0.012), width: r.range(0.4, 0.5) };
+  if (kind === 'linen') return { kind, thread, strength, texture: 'linen' };
+  if (kind === 'boucle') return { kind: 'linen', thread: thread * 2, strength, texture: 'boucle' };
+  return { kind, ...{ dots, floral, gingham, ticking, herringbone }[kind] };
+}
+
 export function generateBenchParams(g) {
   const style = rollStyle(g, STYLES);
   const shape = g.roll('shape', (r) => SHAPES[style](r));
@@ -246,11 +264,8 @@ export function generateBenchParams(g) {
   });
 
   const patterning = g.roll('pattern', (r) => ({
-    fabricPattern: weightedPick(r, { solid: 0.45, stripes: 0.3, checker: 0.25 }),
-    fabricScale: r.int(3, 9),
-    stripeDirection: r.pick(['horizontal', 'vertical']),
-    grainPattern: weightedPick(r, { solid: 0.5, stripes: 0.5 }),
-    grainScale: r.int(3, 6),
+    fabricPattern: rollFabricPattern(r),
+    grain: weightedPick(r, GRAINS),
   }));
 
   const finish = g.roll('finish', (r) => {
@@ -272,18 +287,12 @@ export function generateBenchParams(g) {
 
   let seatColor;
   let seatSecondary;
-  let pattern = 'solid';
-  let patternScale = 1;
   if (seatMaterial === 'wood') {
     seatColor = woodColor(0.04);
     seatSecondary = woodColor(-0.04);
-    pattern = patterning.grainPattern;
-    patternScale = patterning.grainScale;
   } else if (seatMaterial === 'fabric') {
     seatColor = fabricHex;
     seatSecondary = fabricSecondary;
-    pattern = patterning.fabricPattern;
-    patternScale = patterning.fabricScale;
   } else {
     seatColor = style === 'garden' && white ? FRAME_COLORS.white : paintHex;
     seatSecondary = seatColor;
@@ -309,12 +318,9 @@ export function generateBenchParams(g) {
     ...base,
     fabricColor: fabricHex, fabricSecondary, bodyColor, paintColor: paintHex,
     fabricPattern: patterning.fabricPattern,
-    fabricScale: patterning.fabricScale,
-    stripeDirection: patterning.stripeDirection,
-    grainPattern: patterning.grainPattern,
-    grainScale: patterning.grainScale,
+    grain: patterning.grain,
     seatMaterial,
     woodName: seatMaterial === 'wood' || frameMode === 'wood' ? wood.name : null,
-    seatColor, seatSecondary, pattern, patternScale, frameMode, frameColor,
+    woodSwatch: { h: wood.h, s: wood.s, l: wood.l }, seatColor, seatSecondary, frameMode, frameColor,
   };
 }

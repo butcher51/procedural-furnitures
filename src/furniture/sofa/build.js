@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import { boxProjectUVs, edgeRadius, extrudeProfile, extrudeUp, puffy, roundedDiscGeometry } from '../../core/geometry.js';
+import { edgeRadius, extrudeProfile, extrudeUp, puffy, roundedDiscGeometry } from '../../core/geometry.js';
 import { splitSpan } from '../../core/layout.js';
+import { grainAlong } from '../../core/patterns.js';
 import { buildLegs, rowAnchors } from '../../core/supports.js';
 
 const rad = (deg) => (deg * Math.PI) / 180;
@@ -10,11 +11,6 @@ const tiltDeficit = (radius, angle) => radius * (Math.sin(angle) + Math.cos(angl
 function place(mesh, x, y, z, name) {
   mesh.position.set(x, y, z);
   if (name) mesh.name = name;
-  return mesh;
-}
-
-function upholster(mesh) {
-  mesh.geometry = boxProjectUVs(mesh.geometry, 1);
   return mesh;
 }
 
@@ -128,7 +124,7 @@ function buildFeet(p, mats, anchors) {
   const h = p.legHeight + OVERLAP;
   for (const [x, z] of anchors) {
     const geo = roundedDiscGeometry(p.legThickness / 2, h, p.legThickness * 0.3, 8);
-    parts.push(place(new THREE.Mesh(geo, mats.frame), x, h / 2, z));
+    parts.push(grainAlong(place(new THREE.Mesh(geo, mats.frame), x, h / 2, z), 'y'));
   }
   return parts;
 }
@@ -136,9 +132,9 @@ function buildFeet(p, mats, anchors) {
 function buildSupport(p, L, mats, anchors, footprint, plinthOutline) {
   if (p.legStyle === 'plinth') {
     const h = p.legHeight + OVERLAP;
-    if (plinthOutline) return [lSlab(plinthOutline, p.plinthInset, h, 0.02, mats.frame)];
+    if (plinthOutline) return [grainAlong(lSlab(plinthOutline, p.plinthInset, h, 0.02, mats.frame), 'x')];
     const w = footprint.width - 2 * p.plinthInset, d = footprint.depth - 2 * p.plinthInset;
-    return [place(puffy(w, h, d, 0.01, mats.frame, 2), 0, h / 2, footprint.zc)];
+    return [grainAlong(place(puffy(w, h, d, 0.01, mats.frame, 2), 0, h / 2, footprint.zc), 'x')];
   }
   if (p.legStyle === 'bun') return buildFeet(p, mats, anchors);
   if (p.legStyle === 'sled') {
@@ -159,13 +155,13 @@ function buildCushionRows(p, L, mats, parts, seatLo, seatHi, chaiseRange) {
   const segments = p.cushionSegments;
   const seatDepth = L.zFront - L.seatStart;
   for (const { center, size } of splitSpan(seatLo, seatHi, p.seatCushionCount, p.cushionGap)) {
-    parts.push(upholster(place(puffy(size, p.seatThickness, seatDepth, p.cushionPuff, mats.surface, segments), center, L.cushionBottom + p.seatThickness / 2, L.zFront - seatDepth / 2, 'seatCushion')));
+    parts.push(place(puffy(size, p.seatThickness, seatDepth, p.cushionPuff, mats.surface, segments), center, L.cushionBottom + p.seatThickness / 2, L.zFront - seatDepth / 2, 'seatCushion'));
   }
   if (chaiseRange) {
     const [lo, hi] = chaiseRange;
     const zEnd = p.returnLength / 2;
     const d = zEnd - L.seatStart;
-    parts.push(upholster(place(puffy(hi - lo, p.seatThickness, d, p.cushionPuff, mats.surface, segments), (lo + hi) / 2, L.cushionBottom + p.seatThickness / 2, zEnd - d / 2, 'seatCushion')));
+    parts.push(place(puffy(hi - lo, p.seatThickness, d, p.cushionPuff, mats.surface, segments), (lo + hi) / 2, L.cushionBottom + p.seatThickness / 2, zEnd - d / 2, 'seatCushion'));
   }
   if (L.loose) {
     for (const { center, size } of splitSpan(-L.ih, L.ih, p.backCushionCount, p.cushionGap)) {
@@ -173,7 +169,7 @@ function buildCushionRows(p, L, mats, parts, seatLo, seatHi, chaiseRange) {
       pivot.position.set(center, L.cushionBottom - L.tiltLoss, L.pivotZ);
       pivot.rotation.x = -L.a;
       const puff = p.backMode === 'pillow' ? p.cushionPuff * 1.5 : p.cushionPuff;
-      const back = upholster(puffy(size, p.backCushionHeight, p.backCushionThickness, puff, mats.surface, segments));
+      const back = puffy(size, p.backCushionHeight, p.backCushionThickness, puff, mats.surface, segments);
       back.position.set(0, p.backCushionHeight / 2, p.backCushionThickness / 2);
       pivot.add(back);
       parts.push(pivot);
@@ -210,7 +206,7 @@ function buildRun(p, mats) {
   const frameH = p.backTop - p.legHeight;
   const tight = p.backMode === 'tight';
   const frame = place(puffy(p.innerSpan + OVERLAP, frameH, p.backFrameThickness, p.bodyPuff, tight ? mats.surface : mats.body, 2), 0, p.legHeight + frameH / 2, L.zBack + p.backFrameThickness / 2, 'back');
-  parts.push(tight ? upholster(frame) : frame);
+  parts.push(frame);
 
   let outline = null;
   if (L.sectional) {
@@ -295,14 +291,14 @@ function buildChaise(p, mats) {
     const len = p.backFraction * W;
     const h = p.backTop - p.legHeight;
     const back = place(puffy(len, h, p.backFrameThickness, p.bodyPuff, mats.surface, 2), sh * (W / 2 - 0.03 - len / 2), p.legHeight + h / 2, L.zBack + p.backFrameThickness / 2, 'back');
-    parts.push(upholster(back));
+    parts.push(back);
   }
 
   const lo = sh > 0 ? -W / 2 : -W / 2 + p.headLength;
   const hi = sh > 0 ? W / 2 - p.headLength : W / 2;
   const zStart = L.zBack + (hasBack ? p.backFrameThickness : 0.01);
   const d = L.zFront - zStart;
-  parts.push(upholster(place(puffy(hi - lo, p.seatThickness, d, p.cushionPuff, mats.surface, 3), (lo + hi) / 2, L.cushionBottom + p.seatThickness / 2, L.zFront - d / 2, 'seatCushion')));
+  parts.push(place(puffy(hi - lo, p.seatThickness, d, p.cushionPuff, mats.surface, 3), (lo + hi) / 2, L.cushionBottom + p.seatThickness / 2, L.zFront - d / 2, 'seatCushion'));
 
   if (p.pillowCount > 0) {
     const size = p.pillowSize;

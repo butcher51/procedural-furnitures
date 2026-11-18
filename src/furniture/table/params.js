@@ -207,26 +207,18 @@ function generateFinish(g, style, palette) {
     const stone = r.pick(STONE_TONES);
     const stoneL = stone.l + r.range(-0.03, 0.03);
     const uMode = r.next();
-    const planked = r.chance(0.6);
-    const scale = r.int(3, 6);
-    return { topFinish, wood, stone, stoneL, uMode, planked, scale };
+    const grain = r.pick(['fine', 'plain', 'bold']);
+    return { topFinish, wood, stone, stoneL, uMode, grain };
   });
   const baseMode = pickU(f.uMode, baseModeWeights(style, f.topFinish));
   const woodUsed = f.topFinish === 'wood' || baseMode === 'wood';
   const stoneUsed = f.topFinish === 'stone';
   const { wood } = f;
   const woodColor = (dl) => hsl(wood.h, wood.s, wood.l + dl);
-  let topColor, topSecondary;
-  if (f.topFinish === 'wood') {
-    topColor = woodColor(0);
-    topSecondary = woodColor(-0.05);
-  } else if (stoneUsed) {
-    topColor = hsl(f.stone.h, f.stone.s, f.stoneL);
-    topSecondary = topColor;
-  } else {
-    topColor = palette.paint;
-    topSecondary = topColor;
-  }
+  let topColor;
+  if (f.topFinish === 'wood') topColor = woodColor(0);
+  else if (stoneUsed) topColor = hsl(f.stone.h, f.stone.s, f.stoneL);
+  else topColor = palette.paint;
   const baseColor = {
     wood: () => woodColor(-0.04),
     black: () => FRAME_COLORS.black,
@@ -240,10 +232,9 @@ function generateFinish(g, style, palette) {
     woodName: woodUsed ? wood.name : null,
     stoneName: stoneUsed ? f.stone.name : null,
     baseMode,
-    topPattern: f.topFinish === 'wood' && f.planked ? 'stripes' : 'solid',
-    topPatternScale: f.scale,
+    grain: woodUsed ? f.grain : 'none',
+    stonePattern: stoneUsed ? (f.stone.name === 'grey terrazzo' ? 'terrazzo' : 'speckle') : 'none',
     topColor,
-    topSecondary,
     baseColor,
   };
 }
