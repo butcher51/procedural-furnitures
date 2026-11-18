@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Chair Generator</title>
+  <title>Procedural Furniture</title>
   <style>
     :root {
       --bg: #f5f3ef;
@@ -22,7 +22,7 @@
       display: flex;
       flex-direction: column;
     }
-    header {
+    body > header {
       display: flex;
       align-items: center;
       gap: 12px;
@@ -52,13 +52,17 @@
       cursor: pointer;
     }
     button:hover { opacity: 0.85; }
+    button:disabled { opacity: 0.35; cursor: default; }
     #viewport { position: relative; flex: 1; min-height: 0; }
     #viewport canvas { display: block; }
     details {
       position: absolute;
       left: 16px;
       bottom: 16px;
-      min-width: 220px;
+      min-width: 240px;
+      max-width: calc(100% - 32px);
+      max-height: calc(100% - 32px);
+      overflow: auto;
       background: var(--panel);
       backdrop-filter: blur(6px);
       border: 1px solid var(--border);
@@ -70,8 +74,36 @@
       display: grid;
       grid-template-columns: auto auto;
       gap: 3px 16px;
-      margin: 8px 0 0;
+      margin: 4px 0 0;
     }
+    .group { margin-top: 8px; }
+    .group dl { margin-top: 2px; gap: 1px 16px; }
+    .group header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .roll {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 1px 8px;
+      font-size: 13px;
+      letter-spacing: 0;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .roll:hover { background: var(--bg); opacity: 1; }
+    .roll .count { font-size: 11px; font-variant-numeric: tabular-nums; color: var(--muted); }
+    .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .actions button { padding: 4px 10px; font-size: 13px; background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .actions button:hover:not(:disabled) { background: var(--bg); opacity: 1; }
     dt { color: var(--muted); }
     dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
     #loader {
@@ -139,7 +171,7 @@
 </head>
 <body>
   <header>
-    <h1>Chair Generator</h1>
+    <h1>Procedural Furniture</h1>
     <label for="seed">Seed</label>
     <input id="seed" type="text" spellcheck="false" autocomplete="off" title="Type a seed and press Enter" />
     <button id="regen" type="button">Regenerate</button>
@@ -148,15 +180,20 @@
     <div id="loader" hidden>
       <div class="loader-card">
         <div class="spinner"></div>
-        <div id="loader-text">Generating chairs…</div>
+        <div id="loader-text">Generating…</div>
         <div class="bar"><div id="loader-bar"></div></div>
       </div>
     </div>
-    <details open>
-      <summary id="params-title">Parameters</summary>
-      <dl id="params"></dl>
+    <details id="panel" open>
+      <summary data-panel-title>Parameters</summary>
+      <div data-panel-sections></div>
+      <div class="actions">
+        <button type="button" data-action="reset">Reset rolls</button>
+        <button type="button" data-action="copy">Copy link</button>
+        <button type="button" data-action="solo">Solo</button>
+      </div>
     </details>
   </div>
-  <script type="module" src="./main.js"></script>
+  <script type="module" src="./src/app/main.js"></script>
 </body>
 </html>

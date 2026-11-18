@@ -7,7 +7,22 @@ description: Reference for building procedural furniture in this repo — coordi
 
 Source of truth for architecture: `plan/02-architecture.md`. This skill is the condensed working reference; keep it in sync when `src/core` changes (the architect owns that).
 
-> **Status:** P0. The kit still lives in `chair.js` (baseline). P1 (backlog 1.2–1.4) moves it into `src/core/*` and `src/furniture/chair/`. Paths below give the target location; until P1 lands, find the function in `chair.js`.
+## Where things live
+
+| Path | Contents |
+|---|---|
+| `src/core/rng.js` | `hashString`, `mulberry32`, `createRng`, `createGroupedRng` |
+| `src/core/color.js` | `hsl`, `WOOD_TONES` |
+| `src/core/geometry.js` | `edgeRadius`, `puffy`, `strut`, `tube`, `roundedDiscGeometry`, `extrudeUp`, `superellipseShape`, `bendZ`, `bentBandGeometry`, `normalizeUVs` |
+| `src/core/supports.js` | `legAnchors`, `buildLegs`, `LEG_PROFILES`, `buildCurvyLegs` |
+| `src/core/materials.js` | `createMaterials({ textureFactory })`, `canvasPatternTexture`, ref-counted pattern texture cache |
+| `src/core/merge.js` | `groupParts`, `mergeByMaterial`, `disposeObject` |
+| `src/core/item.js` | `itemSeed`, `generateItem(def, sceneSeed, n, rerolls, dna)`, `buildItem(def, params, kit)`, `rerollableGroups`, `fixedGroups` |
+| `src/core/kit.js` | `createKit({ textureFactory })` → `{ materials }` |
+| `src/furniture/registry.js` | `register`, `get`, `has`, `list`; one import + `register()` line per type |
+| `src/furniture/chair/` | Reference plugin: `index.js` (definition), `params.js`, `build.js` |
+
+Generators import geometry/support helpers directly from `src/core/*`; `kit` carries what depends on the runtime (materials bound to a texture factory).
 
 ## Conventions
 
@@ -24,7 +39,13 @@ export default {
   label: 'Table',
   styles: { dining: 0.35, coffee: 0.25, side: 0.15, cafe: 0.15, trestle: 0.1 },
   cell: { spacing: 2.6, gridSize: 15 },
-  groups: [{ id: 'style', label: 'Style' }, { id: 'shape', label: 'Shape' }, { id: 'palette', label: 'Colours' }, { id: 'finish', label: 'Finish' }],
+  plural: 'tables',
+  groups: [
+    { id: 'style', label: 'Style', fields: ['style'] },
+    { id: 'shape', label: 'Shape', fields: ['topShape', 'height'] },
+    { id: 'palette', label: 'Colours', fields: ['topColor'] },
+    { id: 'finish', label: 'Finish', reads: ['palette'], fields: ['frameColor'] },
+  ],
   generateParams(g, dna) {},
   build(params, kit) {},
   describe(params) {},
@@ -35,10 +56,12 @@ export default {
 |---|---|
 | `styles` | Style id → roll weight. Tests check the observed distribution (±4 pp over 2,000 seeds). |
 | `cell` | Grid spacing (m) and grid size. Item x/z extent must be < `spacing − 0.1`. |
-| `groups` | Re-rollable groups in roll order. A group may read earlier groups' results, never later ones. |
+| `groups` | Groups in roll order. `fields`: the params the group owns (re-roll tests check isolation with it). `reads`: earlier groups whose results it uses. `rerollable: false` hides the ⟳ button and ignores rerolls. A group may read earlier groups, never later ones. |
+| `plural` | Loader text ("Generating tables…"). Defaults to `label + 's'`. |
+| `itemSeed`, `legacyRng` | Chair only, for old links. New types omit both. |
 | `generateParams(g, dna)` | Pure. All randomness via `g.roll(groupId, (r) => …)`. Returns JSON-serialisable data incl. `seed`, `type`, `style`. |
 | `build(params, kit)` | Pure. Returns an array of `Object3D` parts in item space. No randomness. |
-| `describe(params)` | `{ sections: [{ group, rows: [[label, value]] }], swatches: [hex] }`. |
+| `describe(params)` | `{ sections: [{ group, rows: [[label, value]] }], swatches: [hex] }`. `value` is a string or `{ swatches: [hex] }`. |
 
 ## Seeds and re-rolls
 
@@ -75,7 +98,13 @@ export default {
 
 ## Materials
 
-Roles: `surface` (upholstery/top, may carry a 64 px pattern), `frame` (legs/structure; metal finish → roughness 0.35, metalness 0.6), `body` (upholstered carcass). Planned: `metal`, `glass`, `emissive`. All `MeshStandardMaterial` with `flatShading: true`. Textures come through an injectable `textureFactory` (returns `null` in Node tests). Never mutate a material that might be shared.
+`kit.materials` (from `createMaterials`), all `MeshStandardMaterial` with `flatShading: true`:
+
+- `surface({ color, secondary, pattern: 'solid'|'stripes'|'checker', scale, direction: 'horizontal'|'vertical', roughness = 0.8 })` — patterned via the texture factory; plain colour when the factory is absent (Node).
+- `frame(color, finish)` — `finish === 'metal'` → roughness 0.35, metalness 0.6, else roughness 0.7.
+- `solid(color, roughness = 0.9)` — upholstered bodies and anything plain.
+
+Create a fresh material per item per role (merge groups by material identity). Pattern textures are cached and ref-counted; `disposeObject` releases them, so never call `texture.dispose()` yourself. Planned roles: `glass`, `emissive`.
 
 ## Budgets (per item)
 
@@ -84,7 +113,7 @@ Roles: `surface` (upholstery/top, may carry a 64 px pattern), `frame` (legs/stru
 | Draw calls after merge | ≤ 4 (≤ 6 with emissive/glass) | max 3 |
 | Triangles | ≤ 6k | p50 3.0k · p95 5.6k · max 7.1k (classic exceeds) |
 | Build time | ≤ 4 ms median (browser) | Node p50 2.7 ms · p95 5.9 ms |
-| Textures | 64×64, shared per pattern+palette key | not cached yet (backlog 1.7) |
+| Textures | 64×64, shared per pattern+palette key | cached (ref-counted) |
 
 Measure with `npm run metrics` (chair only until the registry exists).
 

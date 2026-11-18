@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { generateParams } from '../../chair.js';
+import { generateItem } from '../../src/core/item.js';
+import * as registry from '../../src/furniture/registry.js';
+
+const chair = registry.get('chair');
+const generateParams = (seed) => generateItem(chair, 'baseline', Number(seed.split('-')[1]));
 
 const SEEDS = Array.from({ length: 200 }, (_, i) => `baseline-${i + 1}`);
 

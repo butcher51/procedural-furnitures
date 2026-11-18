@@ -33,12 +33,13 @@ let invariantsOk = true;
 if (existsSync(invariantsScript)) {
   const inv = run(node, [invariantsScript, '--type', args.type, '--count', '500']);
   invariantsOk = inv.ok;
-  fields.invariants = inv.out.match(/invariants: (\S+)/)?.[1] ?? (inv.ok ? 'ok' : 'FAIL');
+  const knownBad = Number(inv.out.match(/known-bad: (\d+)/)?.[1] ?? 0);
+  fields.invariants = (inv.out.match(/invariants: (\S+)/)?.[1] ?? (inv.ok ? 'ok' : 'FAIL')) + (knownBad ? ` (${knownBad} known-bad)` : '');
 } else {
   fields.invariants = 'n/a';
 }
 
-const metrics = run(node, [join(root, 'scripts/metrics.mjs'), '500', `verify-${args.type}`, '--json']);
+const metrics = run(node, [join(root, 'scripts/metrics.mjs'), '500', `verify-${args.type}`, '--type', args.type, '--json']);
 if (metrics.ok) {
   const all = JSON.parse(metrics.out.slice(metrics.out.indexOf('['))).find((r) => r.group === 'all');
   fields['p95 tris'] = `${(all['tris p95'] / 1000).toFixed(1)}k`;

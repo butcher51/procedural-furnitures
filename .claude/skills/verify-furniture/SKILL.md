@@ -27,8 +27,8 @@ Exit code 0 only if every stage passed. Paste the line into your final report, t
 ## Stages
 
 1. **Tests:** `node --test "tests/unit/**/*.test.js"`. Failing test names are printed under the summary.
-2. **Invariants:** `tests/invariants/run.mjs --type T --count 500` if present (lands in backlog 1.6), which must print `invariants: pass/total`. Shows `n/a` until then.
-3. **Budgets:** `scripts/metrics.mjs` over 500 seeds (chair only until the registry exists; P1 makes it type-aware). Compare against `furniture-kit` budgets.
+2. **Invariants:** `tests/invariants/run.mjs --type T --count 500` prints `invariants: pass/total` plus `known-bad: K` (seeds recorded as `"status": "known-bad"` in `tests/regressions/<type>.json`). Known-bad seeds count as not passing but do not fail the stage; any other failure does.
+3. **Budgets:** `scripts/metrics.mjs 500 verify-T --type T --json` over 500 seeds. Compare against `furniture-kit` budgets.
 4. **Snapshot:** the `snapshot` skill with `--name <type>-verify`.
 
 ## Pass bar
