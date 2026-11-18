@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import * as cabinetChecks from './cabinet-checks.js';
 import { frontRegions } from '../../src/furniture/desk/layout.js';
+import { leanFront, zCentre } from '../../src/furniture/shelf/layout.js';
 
 const CENTRED_TOLERANCE = 0.002;
 const ABOVE_SEAT = 0.02;
@@ -271,9 +272,23 @@ function shelfLeaningRearContact({ params, partMeshes, box }) {
   return rear.min.y <= 0.003 && rear.min.z <= plane + 0.01 ? [] : [`leaning rear contact: rear support min z ${rear.min.z.toFixed(3)} vs back plane ${plane.toFixed(3)}`];
 }
 
+function shelfLeaningDecor({ params, partMeshes }) {
+  if (params.style !== 'leaning') return [];
+  const shift = zCentre(params);
+  const v = new THREE.Vector3();
+  for (const mesh of partMeshes.filter((m) => m.userData?.surface && Array.isArray(m.userData.decor))) {
+    const position = mesh.geometry.attributes.position;
+    for (let i = 0; i < position.count; i++) {
+      v.fromBufferAttribute(position, i).applyMatrix4(mesh.matrixWorld);
+      if (v.z > leanFront(params, v.y) - shift + 0.001) return [`shelfLeaningDecor (${mesh.userData.surface.id}): vertex y ${v.y.toFixed(3)} z ${v.z.toFixed(3)} stands in front of the rail plane`];
+    }
+  }
+  return [];
+}
+
 TYPE_RULES.shelf = {
   maxSize: { width: 1.65, height: 2.1, depth: 0.62 },
-  checks: [shelfCentred, shelfHeightInRange, shelfGaps, shelfBackBehind, shelfLeaningRearContact],
+  checks: [shelfCentred, shelfHeightInRange, shelfGaps, shelfBackBehind, shelfLeaningRearContact, shelfLeaningDecor],
 };
 
 const DESK_HEIGHT_WINDOW = { sit: [0.72, 0.76], stand: [1.0, 1.18] };

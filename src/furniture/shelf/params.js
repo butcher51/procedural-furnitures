@@ -103,7 +103,7 @@ function ladderShape(u) {
 function cubeShape(u) {
   const boardThickness = lerp([0.032, 0.05], u[0]);
   const cols = Math.min(4, 1 + Math.floor(u[1] * 4));
-  let rows = Math.min(5, 2 + Math.floor(u[2] * 4));
+  let rows = Math.min(cols === 1 ? 4 : 5, 2 + Math.floor(u[2] * 4));
   let cellSize = lerp([0.3, 0.36], u[3]);
   if (cols * cellSize + (cols + 1) * boardThickness > 1.6) cellSize = (1.6 - (cols + 1) * boardThickness) / cols;
   const depth = lerp([0.35, 0.4], u[4]);
@@ -301,12 +301,34 @@ function namedPaint(r, name) {
   return capSaturation(paint.h + r.range(-0.012, 0.012), paint.s, paint.l + r.range(-0.04, 0.04));
 }
 
-function coverColours(r, mood) {
+function coverColours(r, mood, boardHue, boardSat) {
   if (mood === 'classic') return Array.from({ length: 5 }, () => namedPaint(r, r.pick(CLASSIC)).hex);
   if (mood === 'mixed') return Array.from({ length: 5 }, () => paintColor(r).hex);
   if (mood === 'pale') return Array.from({ length: 5 }, () => fabricColor(r, { mood: 'neutral' }).hex);
-  const base = paintColor(r);
+  let base = paintColor(r);
+  if (boardSat > 0.08) {
+    const d = ((base.h - boardHue + 1.5) % 1) - 0.5;
+    if (Math.abs(d) < 0.1) base = capSaturation(boardHue + (d >= 0 ? 0.14 : -0.14) + 1, base.s, base.l);
+  }
   return [-0.15, -0.07, 0, 0.1, 0.2].map((dl) => shade(base, dl).hex);
+}
+
+function dropLoneBooks(recs) {
+  const books = recs.filter((q) => q.k === 'b').sort((a, b) => a.x - b.x);
+  const drop = new Set();
+  let run = [];
+  let end = -Infinity;
+  const flush = () => {
+    if (run.length && run.length < 3) run.forEach((q) => drop.add(q));
+    run = [];
+  };
+  for (const q of books) {
+    if (q.x - end > 0.02) flush();
+    run.push(q);
+    end = Math.max(end, q.x + q.w + (q.lean ? q.h * Math.sin((Math.abs(q.lean) * Math.PI) / 180) : 0));
+  }
+  flush();
+  return recs.filter((q) => !drop.has(q));
 }
 
 export function contentsLayout(p) {
@@ -323,7 +345,7 @@ export function contentsLayout(p) {
       allowFrames: true,
       budget: CONTENT_BUDGET - frameTris(p),
       inset: p.inset,
-    }),
+    }).map(dropLoneBooks),
   };
 }
 
@@ -332,14 +354,16 @@ function generateContents(g, p) {
     const contentsMood = weightedPick(r, MOODS);
     let coverMood = weightedPick(r, COVER_MOODS);
     if (coverMood === 'pale' && p.frameMode === 'white') coverMood = 'tonal';
-    const boardL = hexToHsl(p.boardColor).l;
-    const bookColors = coverColours(r, coverMood).map((hex) => {
+    const board = hexToHsl(p.boardColor);
+    const boardL = board.l;
+    const bookColors = coverColours(r, coverMood, board.h, board.s).map((hex) => {
       const sw = swatch(hex);
       return Math.abs(sw.l - boardL) < 0.06 ? shade(sw, sw.l >= boardL ? 0.12 : -0.12).hex : hex;
     });
     const pageColor = muted(0.11, r.range(0.15, 0.3), r.range(0.82, 0.9));
-    const ceramic = namedPaint(r, r.pick(CERAMICS)).hex;
-    const objectColors = [ceramic, accentColor(r, swatch(p.frameColor)).hex];
+    const liftBin = (hex) => (hexToHsl(hex).l < 0.3 ? shade(swatch(hex), 0.3 - hexToHsl(hex).l).hex : hex);
+    const ceramic = liftBin(namedPaint(r, r.pick(CERAMICS)).hex);
+    const objectColors = [ceramic, liftBin(accentColor(r, swatch(p.frameColor)).hex)];
     const fillSeed = r.int(0, 2147483647);
     const inset = r.range(0.005, 0.03);
     return { contentsMood, coverMood, bookColors, pageColor, objectColors, fillSeed, inset };
