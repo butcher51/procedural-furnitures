@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { buildItem, generateItem } from '../core/item.js';
 import { disposeObject } from '../core/merge.js';
-import { packRows, verticalNeighbor } from './layout.js';
+import { cellCenter, packRows, verticalNeighbor } from './layout.js';
 
 const RING_DELAY = 100;
 const POP_DURATION = 450;
@@ -120,6 +120,7 @@ export function createShowroom({ scene, kit, onProgress }) {
     const total = single ? 1 : options.count;
     const center = (size - 1) / 2;
     const { spacing } = options;
+    const spacingZ = options.spacingZ ?? spacing;
     const built = [];
     const abandon = () => {
       built.forEach((item) => disposeObject(item.object));
@@ -149,14 +150,14 @@ export function createShowroom({ scene, kit, onProgress }) {
         foot,
         ring,
         center: { x: 0, z: 0 },
-        markerRadius: (MARKER_BASE * spacing) / 1.7,
+        markerRadius: (MARKER_BASE * Math.min(spacing, spacingZ)) / 1.7,
         revealAt: 0,
         popped: false,
         dot: null,
         rollKey: rollKey(rolls),
       });
       if (!mixed) {
-        built[n].center = { x: (col - center) * spacing, z: (row - center) * spacing };
+        built[n].center = cellCenter(row, col, center, spacing, spacingZ);
         object.position.set(built[n].center.x, 0, built[n].center.z);
       }
 

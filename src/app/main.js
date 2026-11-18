@@ -291,6 +291,7 @@ async function populateCurrent({ zoomToItem = false } = {}) {
     gridSize: scene.gridSize,
     count: scene.count,
     spacing: scene.spacing,
+    spacingZ: scene.spacingZ,
     rerolls: state.rerolls,
     animate: motion(),
     ...extra,
@@ -458,16 +459,18 @@ function escape() {
 }
 
 function stageLayout(scene, single) {
-  if (single) return { side: 0, divisions: 1, scale: scene.spacing / 1.7, single: true };
+  if (single) return { sideX: 0, sideZ: 0, divisions: 1, scale: scene.spacing / 1.7, single: true };
   if (scene.mixed) {
     const { width, depth } = grid.extent;
     const side = width || depth ? Math.max(width, depth) : Math.sqrt(ALL_COUNT) * scene.spacing * 0.6;
     const divisions = Math.ceil((side + 1) / 0.5);
-    return { side, floor: divisions * 0.5, divisions, scale: 1, single: false, fit: 1.12 };
+    return { sideX: side, sideZ: side, floorX: divisions * 0.5, floorZ: divisions * 0.5, divisions, scale: 1, single: false, fit: 1.12 };
   }
   return {
-    side: (scene.gridSize - 1) * scene.spacing,
-    floor: scene.gridSize * scene.spacing,
+    sideX: (scene.gridSize - 1) * scene.spacing,
+    sideZ: (scene.gridSize - 1) * scene.spacingZ,
+    floorX: scene.gridSize * scene.spacing,
+    floorZ: scene.gridSize * scene.spacingZ,
     divisions: scene.gridSize * 4,
     scale: scene.spacing / 1.7,
     single: false,

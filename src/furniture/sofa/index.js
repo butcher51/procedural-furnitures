@@ -9,6 +9,7 @@ export default {
   plural: 'sofas',
   styles: STYLES,
   cell: { spacing: 2.8, gridSize: 9 },
+  mixWeight: 0.75,
   groups: [
     { id: 'style', label: 'Style', fields: ['style'] },
     {

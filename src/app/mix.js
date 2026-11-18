@@ -6,7 +6,7 @@ export const ALL_ENTRY = { id: ALL_ID, label: 'All' };
 
 export function pickType(seed, number, definitions) {
   const rng = createRng(`${seed}-all-${number}`);
-  return weightedPick(rng, definitions.map((definition) => [definition, 1]));
+  return weightedPick(rng, definitions.map((definition) => [definition, definition.mixWeight ?? 1]));
 }
 
 const pluralOf = (definition) => definition.plural ?? `${definition.label.toLowerCase()}s`;
@@ -23,6 +23,7 @@ export function createScene(typeId, seed, definitions) {
       count: ALL_COUNT,
       gridSize: Math.ceil(Math.sqrt(ALL_COUNT)),
       spacing: Math.sqrt(meanSpacing),
+      spacingZ: Math.sqrt(meanSpacing),
       resolve: (number) => ({ definition: pickType(seed, number, definitions), seed: sceneSeed }),
     };
   }
@@ -35,6 +36,7 @@ export function createScene(typeId, seed, definitions) {
     count: definition.cell.gridSize ** 2,
     gridSize: definition.cell.gridSize,
     spacing: definition.cell.spacing,
+    spacingZ: definition.cell.spacingZ ?? definition.cell.spacing,
     resolve: () => ({ definition, seed }),
   };
 }

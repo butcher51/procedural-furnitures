@@ -67,10 +67,10 @@ export function saneSize(box, maxSize, label) {
 
 export function fitsCell(box, cell, label) {
   const size = box.getSize(new THREE.Vector3());
-  const limit = cell.spacing - CELL_MARGIN;
+  const limits = { x: cell.spacing - CELL_MARGIN, z: (cell.spacingZ ?? cell.spacing) - CELL_MARGIN };
   return [['x', size.x], ['z', size.z]]
-    .filter(([, extent]) => !(extent < limit))
-    .map(([axis, extent]) => `fits cell (${label}): ${axis} extent ${cm(extent)} >= ${cm(limit)}`);
+    .filter(([axis, extent]) => !(extent < limits[axis]))
+    .map(([axis, extent]) => `fits cell (${label}): ${axis} extent ${cm(extent)} >= ${cm(limits[axis])}`);
 }
 
 export function finite(meshes, label) {
