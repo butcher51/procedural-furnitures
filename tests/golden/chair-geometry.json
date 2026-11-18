@@ -7,15 +7,15 @@
  },
  {
   "seed": "golden-2",
-  "triangles": 5324,
+  "triangles": 4460,
   "drawCalls": 2,
-  "checksum": 21832.188
+  "checksum": 17760.8259
  },
  {
   "seed": "golden-3",
-  "triangles": 5332,
+  "triangles": 4468,
   "drawCalls": 2,
-  "checksum": 25236.0249
+  "checksum": 20552.1834
  },
  {
   "seed": "golden-4",
@@ -25,9 +25,9 @@
  },
  {
   "seed": "golden-5",
-  "triangles": 5340,
+  "triangles": 4476,
   "drawCalls": 2,
-  "checksum": 16030.5422
+  "checksum": 13233.3675
  },
  {
   "seed": "golden-6",
@@ -43,9 +43,9 @@
  },
  {
   "seed": "golden-8",
-  "triangles": 1220,
+  "triangles": 1292,
   "drawCalls": 2,
-  "checksum": 6162.6315
+  "checksum": 6190.1027
  },
  {
   "seed": "golden-9",
@@ -55,27 +55,27 @@
  },
  {
   "seed": "golden-10",
-  "triangles": 1216,
+  "triangles": 1312,
   "drawCalls": 2,
-  "checksum": 5697.2709
+  "checksum": 5709.7554
  },
  {
   "seed": "golden-11",
-  "triangles": 4752,
+  "triangles": 3600,
   "drawCalls": 2,
-  "checksum": 27681.3615
+  "checksum": 21534.0258
  },
  {
   "seed": "golden-12",
-  "triangles": 4180,
+  "triangles": 3316,
   "drawCalls": 2,
-  "checksum": 19978.1926
+  "checksum": 16361.364
  },
  {
   "seed": "golden-13",
-  "triangles": 1600,
+  "triangles": 1696,
   "drawCalls": 2,
-  "checksum": 6351.5903
+  "checksum": 6372.6268
  },
  {
   "seed": "golden-14",
@@ -85,33 +85,33 @@
  },
  {
   "seed": "golden-15",
-  "triangles": 1600,
+  "triangles": 1696,
   "drawCalls": 2,
-  "checksum": 6067.454
+  "checksum": 6085.956
  },
  {
   "seed": "golden-16",
-  "triangles": 1072,
+  "triangles": 1168,
   "drawCalls": 2,
-  "checksum": 4342.178
+  "checksum": 4362.9861
  },
  {
   "seed": "golden-17",
-  "triangles": 1336,
+  "triangles": 1408,
   "drawCalls": 2,
-  "checksum": 5037.597
+  "checksum": 5068.0133
  },
  {
   "seed": "golden-18",
-  "triangles": 3656,
+  "triangles": 3080,
   "drawCalls": 2,
-  "checksum": 19132.8744
+  "checksum": 16425.8792
  },
  {
   "seed": "golden-19",
-  "triangles": 1336,
+  "triangles": 1408,
   "drawCalls": 2,
-  "checksum": 4859.1778
+  "checksum": 4892.5417
  },
  {
   "seed": "golden-20",
@@ -139,27 +139,27 @@
  },
  {
   "seed": "golden-24",
-  "triangles": 4360,
+  "triangles": 3784,
   "drawCalls": 2,
-  "checksum": 18484.7388
+  "checksum": 15557.7721
  },
  {
   "seed": "golden-25",
-  "triangles": 1096,
+  "triangles": 1168,
   "drawCalls": 2,
-  "checksum": 5493.1678
+  "checksum": 5505.8008
  },
  {
   "seed": "golden-26",
-  "triangles": 1340,
+  "triangles": 1436,
   "drawCalls": 2,
-  "checksum": 5378.6358
+  "checksum": 5392.747
  },
  {
   "seed": "golden-27",
-  "triangles": 1724,
+  "triangles": 1820,
   "drawCalls": 2,
-  "checksum": 7021.6442
+  "checksum": 7044.3217
  },
  {
   "seed": "golden-28",
@@ -169,9 +169,9 @@
  },
  {
   "seed": "golden-29",
-  "triangles": 4832,
+  "triangles": 3680,
   "drawCalls": 2,
-  "checksum": 20895.4648
+  "checksum": 16572.0573
  },
  {
   "seed": "golden-30",
@@ -187,9 +187,9 @@
  },
  {
   "seed": "golden-32",
-  "triangles": 1456,
+  "triangles": 1552,
   "drawCalls": 2,
-  "checksum": 5254.5159
+  "checksum": 5270.7342
  },
  {
   "seed": "golden-33",
@@ -217,15 +217,15 @@
  },
  {
   "seed": "golden-37",
-  "triangles": 952,
+  "triangles": 1024,
   "drawCalls": 2,
-  "checksum": 4280.2526
+  "checksum": 4310.6425
  },
  {
   "seed": "golden-38",
-  "triangles": 1456,
+  "triangles": 1552,
   "drawCalls": 2,
-  "checksum": 5352.1726
+  "checksum": 5367.4353
  },
  {
   "seed": "golden-39",
@@ -241,9 +241,9 @@
  },
  {
   "seed": "golden-41",
-  "triangles": 4912,
+  "triangles": 3472,
   "drawCalls": 2,
-  "checksum": 25510.8001
+  "checksum": 18670.3228
  },
  {
   "seed": "golden-42",
@@ -253,33 +253,33 @@
  },
  {
   "seed": "golden-43",
-  "triangles": 1176,
+  "triangles": 1272,
   "drawCalls": 2,
-  "checksum": 5115.1058
+  "checksum": 5134.5524
  },
  {
   "seed": "golden-44",
-  "triangles": 5356,
+  "triangles": 4492,
   "drawCalls": 2,
-  "checksum": 21916.9781
+  "checksum": 17790.5285
  },
  {
   "seed": "golden-45",
-  "triangles": 1456,
+  "triangles": 1552,
   "drawCalls": 2,
-  "checksum": 5133.1939
+  "checksum": 5148.3591
  },
  {
   "seed": "golden-46",
-  "triangles": 5940,
+  "triangles": 4212,
   "drawCalls": 2,
-  "checksum": 39229.6549
+  "checksum": 28409.802
  },
  {
   "seed": "golden-47",
-  "triangles": 1604,
+  "triangles": 1676,
   "drawCalls": 2,
-  "checksum": 7133.8126
+  "checksum": 7155.8679
  },
  {
   "seed": "golden-48",
@@ -289,15 +289,15 @@
  },
  {
   "seed": "golden-49",
-  "triangles": 1600,
+  "triangles": 1696,
   "drawCalls": 2,
-  "checksum": 6718.5245
+  "checksum": 6734.389
  },
  {
   "seed": "golden-50",
-  "triangles": 1456,
+  "triangles": 1552,
   "drawCalls": 2,
-  "checksum": 5086.2139
+  "checksum": 5104.0293
  },
  {
   "seed": "golden-51",
@@ -307,15 +307,15 @@
  },
  {
   "seed": "golden-52",
-  "triangles": 1456,
+  "triangles": 1552,
   "drawCalls": 2,
-  "checksum": 4767.5259
+  "checksum": 4780.8622
  },
  {
   "seed": "golden-53",
-  "triangles": 1072,
+  "triangles": 1168,
   "drawCalls": 2,
-  "checksum": 4129.0588
+  "checksum": 4142.2283
  },
  {
   "seed": "golden-54",
@@ -337,9 +337,9 @@
  },
  {
   "seed": "golden-57",
-  "triangles": 5348,
+  "triangles": 3908,
   "drawCalls": 2,
-  "checksum": 22441.7105
+  "checksum": 16783.0259
  },
  {
   "seed": "golden-58",
@@ -355,33 +355,33 @@
  },
  {
   "seed": "golden-60",
-  "triangles": 1724,
+  "triangles": 1820,
   "drawCalls": 2,
-  "checksum": 7058.3575
+  "checksum": 7074.3323
  },
  {
   "seed": "golden-61",
-  "triangles": 1072,
+  "triangles": 1168,
   "drawCalls": 2,
-  "checksum": 4556.5067
+  "checksum": 4576.1304
  },
  {
   "seed": "golden-62",
-  "triangles": 3600,
+  "triangles": 3024,
   "drawCalls": 2,
-  "checksum": 11501.6985
+  "checksum": 9997.4112
  },
  {
   "seed": "golden-63",
-  "triangles": 7088,
+  "triangles": 5360,
   "drawCalls": 2,
-  "checksum": 26226.936
+  "checksum": 19131.6245
  },
  {
   "seed": "golden-64",
-  "triangles": 4380,
+  "triangles": 3804,
   "drawCalls": 2,
-  "checksum": 14183.4559
+  "checksum": 11880.2334
  },
  {
   "seed": "golden-65",
@@ -397,9 +397,9 @@
  },
  {
   "seed": "golden-67",
-  "triangles": 1196,
+  "triangles": 1292,
   "drawCalls": 2,
-  "checksum": 5270.7444
+  "checksum": 5287.3381
  },
  {
   "seed": "golden-68",
@@ -415,39 +415,39 @@
  },
  {
   "seed": "golden-70",
-  "triangles": 5528,
+  "triangles": 3800,
   "drawCalls": 2,
-  "checksum": 31422.314
+  "checksum": 22049.4419
  },
  {
   "seed": "golden-71",
-  "triangles": 1336,
+  "triangles": 1408,
   "drawCalls": 2,
-  "checksum": 4818.7385
+  "checksum": 4846.2769
  },
  {
   "seed": "golden-72",
-  "triangles": 1724,
+  "triangles": 1820,
   "drawCalls": 2,
-  "checksum": 7218.9322
+  "checksum": 7242.1735
  },
  {
   "seed": "golden-73",
-  "triangles": 5520,
+  "triangles": 4368,
   "drawCalls": 2,
-  "checksum": 24388.8745
+  "checksum": 18295.8076
  },
  {
   "seed": "golden-74",
-  "triangles": 1340,
+  "triangles": 1436,
   "drawCalls": 2,
-  "checksum": 6441.3131
+  "checksum": 6455.4722
  },
  {
   "seed": "golden-75",
-  "triangles": 1072,
+  "triangles": 1168,
   "drawCalls": 2,
-  "checksum": 4013.6872
+  "checksum": 4027.8285
  },
  {
   "seed": "golden-76",
@@ -457,15 +457,15 @@
  },
  {
   "seed": "golden-77",
-  "triangles": 4876,
+  "triangles": 3436,
   "drawCalls": 2,
-  "checksum": 17876.9887
+  "checksum": 12918.118
  },
  {
   "seed": "golden-78",
-  "triangles": 6008,
+  "triangles": 4280,
   "drawCalls": 2,
-  "checksum": 35168.8363
+  "checksum": 25728.8524
  },
  {
   "seed": "golden-79",
@@ -475,9 +475,9 @@
  },
  {
   "seed": "golden-80",
-  "triangles": 1340,
+  "triangles": 1436,
   "drawCalls": 2,
-  "checksum": 6065.9812
+  "checksum": 6076.4272
  },
  {
   "seed": "golden-81",
@@ -487,9 +487,9 @@
  },
  {
   "seed": "golden-82",
-  "triangles": 1600,
+  "triangles": 1696,
   "drawCalls": 2,
-  "checksum": 6865.8031
+  "checksum": 6883.3655
  },
  {
   "seed": "golden-83",
@@ -499,9 +499,9 @@
  },
  {
   "seed": "golden-84",
-  "triangles": 6508,
+  "triangles": 5068,
   "drawCalls": 2,
-  "checksum": 23627.6197
+  "checksum": 17880.2059
  },
  {
   "seed": "golden-85",
@@ -529,21 +529,21 @@
  },
  {
   "seed": "golden-89",
-  "triangles": 4752,
+  "triangles": 4176,
   "drawCalls": 2,
-  "checksum": 14415.118
+  "checksum": 12424.2274
  },
  {
   "seed": "golden-90",
-  "triangles": 4760,
+  "triangles": 3608,
   "drawCalls": 2,
-  "checksum": 21228.1155
+  "checksum": 16480.1014
  },
  {
   "seed": "golden-91",
-  "triangles": 5364,
+  "triangles": 3924,
   "drawCalls": 2,
-  "checksum": 19942.9271
+  "checksum": 15261.5251
  },
  {
   "seed": "golden-92",
@@ -553,9 +553,9 @@
  },
  {
   "seed": "golden-93",
-  "triangles": 1456,
+  "triangles": 1552,
   "drawCalls": 2,
-  "checksum": 4715.0176
+  "checksum": 4732.5246
  },
  {
   "seed": "golden-94",
@@ -589,9 +589,9 @@
  },
  {
   "seed": "golden-99",
-  "triangles": 1456,
+  "triangles": 1552,
   "drawCalls": 2,
-  "checksum": 5308.9004
+  "checksum": 5326.8002
  },
  {
   "seed": "golden-100",
@@ -601,9 +601,9 @@
  },
  {
   "seed": "golden-101",
-  "triangles": 5572,
+  "triangles": 3844,
   "drawCalls": 2,
-  "checksum": 32531.9439
+  "checksum": 23163.1458
  },
  {
   "seed": "golden-102",
@@ -613,9 +613,9 @@
  },
  {
   "seed": "golden-103",
-  "triangles": 1340,
+  "triangles": 1436,
   "drawCalls": 2,
-  "checksum": 5933.8489
+  "checksum": 5949.3328
  },
  {
   "seed": "golden-104",
@@ -625,9 +625,9 @@
  },
  {
   "seed": "golden-105",
-  "triangles": 5440,
+  "triangles": 4288,
   "drawCalls": 2,
-  "checksum": 14384.1013
+  "checksum": 10851.0307
  },
  {
   "seed": "golden-106",
@@ -637,9 +637,9 @@
  },
  {
   "seed": "golden-107",
-  "triangles": 1724,
+  "triangles": 1820,
   "drawCalls": 2,
-  "checksum": 6711.2024
+  "checksum": 6726.9166
  },
  {
   "seed": "golden-108",
@@ -649,21 +649,21 @@
  },
  {
   "seed": "golden-109",
-  "triangles": 4212,
+  "triangles": 3348,
   "drawCalls": 2,
-  "checksum": 18115.3807
+  "checksum": 14808.1129
  },
  {
   "seed": "golden-110",
-  "triangles": 952,
+  "triangles": 1024,
   "drawCalls": 2,
-  "checksum": 4096.764
+  "checksum": 4109.6114
  },
  {
   "seed": "golden-111",
-  "triangles": 4752,
+  "triangles": 4176,
   "drawCalls": 2,
-  "checksum": 18080.8771
+  "checksum": 15565.844
  },
  {
   "seed": "golden-112",
@@ -673,9 +673,9 @@
  },
  {
   "seed": "golden-113",
-  "triangles": 1196,
+  "triangles": 1292,
   "drawCalls": 2,
-  "checksum": 5497.7633
+  "checksum": 5514.0283
  },
  {
   "seed": "golden-114",
@@ -709,15 +709,15 @@
  },
  {
   "seed": "golden-119",
-  "triangles": 7104,
+  "triangles": 5376,
   "drawCalls": 2,
-  "checksum": 26415.4268
+  "checksum": 19450.7599
  },
  {
   "seed": "golden-120",
-  "triangles": 1600,
+  "triangles": 1696,
   "drawCalls": 2,
-  "checksum": 6820.419
+  "checksum": 6838.2767
  },
  {
   "seed": "golden-121",
@@ -727,9 +727,9 @@
  },
  {
   "seed": "golden-122",
-  "triangles": 1604,
+  "triangles": 1676,
   "drawCalls": 2,
-  "checksum": 6081.9976
+  "checksum": 6095.2929
  },
  {
   "seed": "golden-123",
@@ -745,21 +745,21 @@
  },
  {
   "seed": "golden-125",
-  "triangles": 1072,
+  "triangles": 1168,
   "drawCalls": 2,
-  "checksum": 4341.435
+  "checksum": 4359.3645
  },
  {
   "seed": "golden-126",
-  "triangles": 1072,
+  "triangles": 1168,
   "drawCalls": 2,
-  "checksum": 4428.9668
+  "checksum": 4449.4108
  },
  {
   "seed": "golden-127",
-  "triangles": 1724,
+  "triangles": 1820,
   "drawCalls": 2,
-  "checksum": 6921.9771
+  "checksum": 6941.8036
  },
  {
   "seed": "golden-128",
@@ -775,15 +775,15 @@
  },
  {
   "seed": "golden-130",
-  "triangles": 4980,
+  "triangles": 3540,
   "drawCalls": 2,
-  "checksum": 23992.7269
+  "checksum": 17530.8271
  },
  {
   "seed": "golden-131",
-  "triangles": 4744,
+  "triangles": 4168,
   "drawCalls": 2,
-  "checksum": 16976.5091
+  "checksum": 14551.0453
  },
  {
   "seed": "golden-132",
@@ -799,27 +799,27 @@
  },
  {
   "seed": "golden-134",
-  "triangles": 1540,
+  "triangles": 1636,
   "drawCalls": 2,
-  "checksum": 6297.4726
+  "checksum": 6318.4871
  },
  {
   "seed": "golden-135",
-  "triangles": 1604,
+  "triangles": 1676,
   "drawCalls": 2,
-  "checksum": 6830.6771
+  "checksum": 6866.1932
  },
  {
   "seed": "golden-136",
-  "triangles": 1560,
+  "triangles": 1656,
   "drawCalls": 2,
-  "checksum": 6423.2584
+  "checksum": 6446.1105
  },
  {
   "seed": "golden-137",
-  "triangles": 1072,
+  "triangles": 1168,
   "drawCalls": 2,
-  "checksum": 4093.4807
+  "checksum": 4110.1236
  },
  {
   "seed": "golden-138",
@@ -835,21 +835,21 @@
  },
  {
   "seed": "golden-140",
-  "triangles": 4212,
+  "triangles": 3348,
   "drawCalls": 2,
-  "checksum": 16178.2315
+  "checksum": 13274.7822
  },
  {
   "seed": "golden-141",
-  "triangles": 6508,
+  "triangles": 5068,
   "drawCalls": 2,
-  "checksum": 23914.5101
+  "checksum": 18140.886
  },
  {
   "seed": "golden-142",
-  "triangles": 1072,
+  "triangles": 1168,
   "drawCalls": 2,
-  "checksum": 4707.6451
+  "checksum": 4722.1654
  },
  {
   "seed": "golden-143",
@@ -859,9 +859,9 @@
  },
  {
   "seed": "golden-144",
-  "triangles": 3112,
+  "triangles": 2536,
   "drawCalls": 2,
-  "checksum": 18058.0505
+  "checksum": 14923.4159
  },
  {
   "seed": "golden-145",
@@ -871,39 +871,39 @@
  },
  {
   "seed": "golden-146",
-  "triangles": 5332,
+  "triangles": 4468,
   "drawCalls": 2,
-  "checksum": 21909.9135
+  "checksum": 17797.8792
  },
  {
   "seed": "golden-147",
-  "triangles": 5940,
+  "triangles": 4212,
   "drawCalls": 2,
-  "checksum": 33078.2149
+  "checksum": 23980.2471
  },
  {
   "seed": "golden-148",
-  "triangles": 4876,
+  "triangles": 3436,
   "drawCalls": 2,
-  "checksum": 31081.4007
+  "checksum": 22571.0927
  },
  {
   "seed": "golden-149",
-  "triangles": 1600,
+  "triangles": 1696,
   "drawCalls": 2,
-  "checksum": 6686.9588
+  "checksum": 6702.2384
  },
  {
   "seed": "golden-150",
-  "triangles": 4764,
+  "triangles": 3612,
   "drawCalls": 2,
-  "checksum": 26869.9114
+  "checksum": 20831.6623
  },
  {
   "seed": "golden-151",
-  "triangles": 1456,
+  "triangles": 1552,
   "drawCalls": 2,
-  "checksum": 5737.2973
+  "checksum": 5751.5609
  },
  {
   "seed": "golden-152",
@@ -919,15 +919,15 @@
  },
  {
   "seed": "golden-154",
-  "triangles": 7120,
+  "triangles": 5392,
   "drawCalls": 2,
-  "checksum": 30668.1532
+  "checksum": 22365.519
  },
  {
   "seed": "golden-155",
-  "triangles": 4860,
+  "triangles": 3996,
   "drawCalls": 2,
-  "checksum": 15664.1765
+  "checksum": 12294.2567
  },
  {
   "seed": "golden-156",
@@ -943,9 +943,9 @@
  },
  {
   "seed": "golden-158",
-  "triangles": 6008,
+  "triangles": 4280,
   "drawCalls": 2,
-  "checksum": 24309.9822
+  "checksum": 17875.2333
  },
  {
   "seed": "golden-159",
@@ -955,21 +955,21 @@
  },
  {
   "seed": "golden-160",
-  "triangles": 1724,
+  "triangles": 1820,
   "drawCalls": 2,
-  "checksum": 6866.402
+  "checksum": 6885.7014
  },
  {
   "seed": "golden-161",
-  "triangles": 1604,
+  "triangles": 1676,
   "drawCalls": 2,
-  "checksum": 6386.7347
+  "checksum": 6421.9068
  },
  {
   "seed": "golden-162",
-  "triangles": 1456,
+  "triangles": 1552,
   "drawCalls": 2,
-  "checksum": 5204.2137
+  "checksum": 5222.4207
  },
  {
   "seed": "golden-163",
@@ -979,9 +979,9 @@
  },
  {
   "seed": "golden-164",
-  "triangles": 4896,
+  "triangles": 3456,
   "drawCalls": 2,
-  "checksum": 26054.2281
+  "checksum": 18982.832
  },
  {
   "seed": "golden-165",
@@ -1027,9 +1027,9 @@
  },
  {
   "seed": "golden-172",
-  "triangles": 1072,
+  "triangles": 1168,
   "drawCalls": 2,
-  "checksum": 4422.9674
+  "checksum": 4439.06
  },
  {
   "seed": "golden-173",
@@ -1057,9 +1057,9 @@
  },
  {
   "seed": "golden-177",
-  "triangles": 1456,
+  "triangles": 1552,
   "drawCalls": 2,
-  "checksum": 5086.4235
+  "checksum": 5101.7949
  },
  {
   "seed": "golden-178",
@@ -1069,27 +1069,27 @@
  },
  {
   "seed": "golden-179",
-  "triangles": 1420,
+  "triangles": 1492,
   "drawCalls": 2,
-  "checksum": 6263.8266
+  "checksum": 6299.3841
  },
  {
   "seed": "golden-180",
-  "triangles": 1216,
+  "triangles": 1312,
   "drawCalls": 2,
-  "checksum": 5409.2012
+  "checksum": 5421.4785
  },
  {
   "seed": "golden-181",
-  "triangles": 6676,
+  "triangles": 4948,
   "drawCalls": 2,
-  "checksum": 35759.0273
+  "checksum": 25309.5671
  },
  {
   "seed": "golden-182",
-  "triangles": 1456,
+  "triangles": 1552,
   "drawCalls": 2,
-  "checksum": 5801.012
+  "checksum": 5822.0292
  },
  {
   "seed": "golden-183",
@@ -1111,21 +1111,21 @@
  },
  {
   "seed": "golden-186",
-  "triangles": 1456,
+  "triangles": 1552,
   "drawCalls": 2,
-  "checksum": 5016.9426
+  "checksum": 5030.7387
  },
  {
   "seed": "golden-187",
-  "triangles": 6680,
+  "triangles": 4952,
   "drawCalls": 2,
-  "checksum": 30181.8101
+  "checksum": 21376.3687
  },
  {
   "seed": "golden-188",
-  "triangles": 1604,
+  "triangles": 1676,
   "drawCalls": 2,
-  "checksum": 6734.9271
+  "checksum": 6758.7332
  },
  {
   "seed": "golden-189",
@@ -1135,21 +1135,21 @@
  },
  {
   "seed": "golden-190",
-  "triangles": 1340,
+  "triangles": 1436,
   "drawCalls": 2,
-  "checksum": 5625.448
+  "checksum": 5638.443
  },
  {
   "seed": "golden-191",
-  "triangles": 1540,
+  "triangles": 1636,
   "drawCalls": 2,
-  "checksum": 6490.0675
+  "checksum": 6512.8012
  },
  {
   "seed": "golden-192",
-  "triangles": 1724,
+  "triangles": 1820,
   "drawCalls": 2,
-  "checksum": 7262.43
+  "checksum": 7277.6012
  },
  {
   "seed": "golden-193",
@@ -1159,21 +1159,21 @@
  },
  {
   "seed": "golden-194",
-  "triangles": 1724,
+  "triangles": 1820,
   "drawCalls": 2,
-  "checksum": 6967.8791
+  "checksum": 6991.595
  },
  {
   "seed": "golden-195",
-  "triangles": 1724,
+  "triangles": 1820,
   "drawCalls": 2,
-  "checksum": 6509.4234
+  "checksum": 6529.6621
  },
  {
   "seed": "golden-196",
-  "triangles": 1724,
+  "triangles": 1820,
   "drawCalls": 2,
-  "checksum": 7280.4482
+  "checksum": 7298.4373
  },
  {
   "seed": "golden-197",
@@ -1183,9 +1183,9 @@
  },
  {
   "seed": "golden-198",
-  "triangles": 1580,
+  "triangles": 1676,
   "drawCalls": 2,
-  "checksum": 6289.0346
+  "checksum": 6310.5593
  },
  {
   "seed": "golden-199",

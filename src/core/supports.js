@@ -71,6 +71,14 @@ export const LEG_PROFILES = {
   bow: [0, 0.9, 0.9, 0.35], // a long outward arc
 };
 
+export function bentwoodFoot(path, radius, sides, mat) {
+  const end = path.getPoint(1);
+  const tangent = path.getTangent(1);
+  const endRimTop = end.y + radius * Math.sqrt(Math.max(0, 1 - tangent.y ** 2));
+  const height = endRimTop + radius * 0.3;
+  return strut(new THREE.Vector3(end.x, 0, end.z), new THREE.Vector3(end.x, height, end.z), radius * 1.1, radius * 1.2, sides, mat);
+}
+
 export function buildCurvyLegs(p, mats, fp) {
   const group = new THREE.Group();
   const profile = LEG_PROFILES[p.legCurve];
@@ -87,6 +95,7 @@ export function buildCurvyLegs(p, mats, fp) {
     });
     const leg = tube(points, radius, p.legSides, mats.frame);
     group.add(leg);
+    group.add(bentwoodFoot(leg.geometry.parameters.path, radius, p.legSides, mats.frame));
     ringPoints.push(leg.geometry.parameters.path.getPoint(ringT));
   }
 

@@ -14,7 +14,7 @@ Source of truth for architecture: `plan/02-architecture.md`. This skill is the c
 | `src/core/rng.js` | `hashString`, `mulberry32`, `createRng`, `createGroupedRng` |
 | `src/core/color.js` | `hsl`, `WOOD_TONES` |
 | `src/core/geometry.js` | `edgeRadius`, `puffy`, `strut`, `tube`, `roundedDiscGeometry`, `extrudeUp`, `superellipseShape`, `bendZ`, `bentBandGeometry`, `normalizeUVs` |
-| `src/core/supports.js` | `legAnchors`, `buildLegs`, `LEG_PROFILES`, `buildCurvyLegs` |
+| `src/core/supports.js` | `legAnchors`, `buildLegs`, `LEG_PROFILES`, `bentwoodFoot`, `buildCurvyLegs` |
 | `src/core/materials.js` | `createMaterials({ textureFactory })`, `canvasPatternTexture`, ref-counted pattern texture cache |
 | `src/core/merge.js` | `groupParts`, `mergeByMaterial`, `disposeObject` |
 | `src/core/item.js` | `itemSeed`, `generateItem(def, sceneSeed, n, rerolls, dna)`, `buildItem(def, params, kit)`, `rerollableGroups`, `fixedGroups` |
@@ -29,7 +29,7 @@ Generators import geometry/support helpers directly from `src/core/*`; `kit` car
 - Units are **meters**. Use real-world, ergonomic ranges (see the spec for the type).
 - **y is up.** Items stand on **y = 0**, the **front faces +z**, items are **centred on x/z**.
 - Back rests pivot on the rear edge of the seat (`pivot.rotation.x = -deg(backAngle)` tilts backwards).
-- Low-poly, flat-shaded, soft bevels: 3 bevel segments on boxes, 4–12 sides on cylinders.
+- Low-poly, flat-shaded, soft bevels: 3 bevel segments on boxes (2 on thin repeated bars such as slats and rails), 4–12 sides on cylinders.
 
 ## FurnitureDefinition contract
 
@@ -82,17 +82,18 @@ export default {
 | `hsl(h, s, l)` (color) | sRGB hex string | Inputs 0–1. Keep s ≤ 0.75 and l in 0.25–0.85 so palettes never go neon. |
 | `WOOD_TONES` (color) | `{ name, h, s, l }` × 6 | Jitter h ±0.01 and l ±0.05 per item. |
 | `edgeRadius(r, w, h, d)` (geometry) | Clamped bevel radius | Always use it; RoundedBoxGeometry breaks when r ≥ half the thinnest side. |
-| `puffy(w, h, d, r, mat)` (geometry) | Rounded box mesh centred on origin | Radius is clamped via `edgeRadius`. Geometry is non-indexed. |
+| `puffy(w, h, d, r, mat, segments = 3)` (geometry) | Rounded box mesh centred on origin | Radius is clamped via `edgeRadius`. Geometry is non-indexed. Cost is 12·(2·segments+1)² triangles: 588 at 3, 300 at 2. Pass `segments` 2 for thin repeated bars (slats, rails) to stay under 6k. |
 | `roundedDiscGeometry(radius, h, edge, sides)` | Lathe disc with rounded rim, centred on y | `sides` 6–12 keeps it low poly. |
 | `strut(bottom, top, rTop, rBottom, sides, mat)` | Cylinder between two Vector3s | Rotated with a 45° phase so 4-sided legs look square-on. |
-| `tube(points, radius, sides, mat, closed, segments)` | Centripetal Catmull-Rom tube | Ends are open; rest the end centre `radius` above the floor. |
+| `tube(points, radius, sides, mat, closed, segments)` | Centripetal Catmull-Rom tube | Ends are open. A tube ending at the floor floats by `radius` unless you close it, e.g. with `bentwoodFoot`. |
 | `extrudeUp(shape, height, bevel)` | Beveled slab from a plan outline, bottom at y = 0 | Shape is in (x, −z). UVs are in meters → `normalizeUVs`. |
 | `superellipseShape(hx, hz, exponent, steps)` | Plan outline | exponent 2 = ellipse, 4 = squircle, 10 ≈ rectangle. |
 | `bentBandGeometry(w, h, t, bend)` | Vertical band curved in plan | Ends come forward by `bend`. |
 | `normalizeUVs(geo, size)` | Rescales meter UVs | Needed so patterns tile like on boxes. |
 | `legAnchors(p, fp)` (supports) | Leg top (x, z) list for 1–n legs | Uses `p.legCount`, `p.legThickness`; `fp = { width, depth, round?, exponent? }`. |
 | `buildLegs(p, mats, fp)` (supports) | Legs: pedestal (1), sled runners (2), splayed struts (3+) | `fp.top` = y the legs hold up. |
-| `buildCurvyLegs(p, mats, fp)` (supports) | Bentwood legs (sabre/cabriole/bow) + optional ring | Needs `p.legCurve`, `p.hasRing`, `p.ringHeight`. |
+| `bentwoodFoot(path, radius, sides, mat)` (supports) | Ferrule foot from y = 0 up past the open end of a tube leg | `path` is the tube curve (`mesh.geometry.parameters.path`); the end centre must sit `radius` above the floor. 4·sides triangles. |
+| `buildCurvyLegs(p, mats, fp)` (supports) | Bentwood legs (sabre/cabriole/bow) on ferrule feet + optional ring | Needs `p.legCurve`, `p.hasRing`, `p.ringHeight`. Feet stand on y = 0 exactly. |
 | `mergeByMaterial(root)` (merge) | One mesh per material | Disposes source geometries; converts indexed → non-indexed. |
 | `disposeObject(root)` (merge) | Frees geometry, materials, maps | Call before dropping an item. |
 
@@ -108,11 +109,11 @@ Create a fresh material per item per role (merge groups by material identity). P
 
 ## Budgets (per item)
 
-| Metric | Budget | Chair baseline (P0, 500 seeds, Node) |
+| Metric | Budget | Chair baseline (500 seeds, Node, after the curvy-foot and thin-bar fixes) |
 |---|---|---|
 | Draw calls after merge | ≤ 4 (≤ 6 with emissive/glass) | max 3 |
-| Triangles | ≤ 6k | p50 3.0k · p95 5.6k · max 7.1k (classic exceeds) |
-| Build time | ≤ 4 ms median (browser) | Node p50 2.7 ms · p95 5.9 ms |
+| Triangles | ≤ 6k | p50 2.6k · p95 4.2k · max 5.4k (classic max 5.4k, curvy max 1.8k) |
+| Build time | ≤ 4 ms median (browser) | Node p50 2.8 ms · p95 5.1 ms |
 | Textures | 64×64, shared per pattern+palette key | cached (ref-counted) |
 
 Measure with `npm run metrics` (chair only until the registry exists).

@@ -37,13 +37,13 @@ First-time setup: `npm install && npx playwright install chromium`.
 - Ownership: `src/core/**` and `src/furniture/registry.js` belong to the architect. Generator engineers touch only `src/furniture/<type>/**` and their tests.
 - Human gates (★ in the plan) are never passed by an agent.
 
-## Baseline metrics (P0, chair, 500 seeds, Node 22)
+## Baseline metrics (chair, 500 seeds, Node 22, after the curvy-foot and thin-bar fixes)
 
 | Group | n | tris p50 | tris p95 | tris max | draws max | build ms p50 | build ms p95 |
 |---|---|---|---|---|---|---|---|
-| all | 500 | 2,988 | 5,568 | 7,120 | 3 | 2.74 | 5.85 |
-| classic | 181 | 4,180 | 5,976 | 7,120 | 2 | 4.11 | 6.18 |
-| cozy | 171 | 3,020 | 4,164 | 4,180 | 3 | 2.99 | 4.25 |
-| curvy | 148 | 1,456 | 1,724 | 1,724 | 2 | 1.22 | 2.14 |
+| all | 500 | 2,640 | 4,212 | 5,392 | 3 | 2.79 | 5.13 |
+| classic | 181 | 3,316 | 4,580 | 5,392 | 2 | 3.71 | 5.39 |
+| cozy | 171 | 3,020 | 4,164 | 4,180 | 3 | 3.16 | 4.67 |
+| curvy | 148 | 1,552 | 1,820 | 1,820 | 2 | 1.41 | 2.51 |
 
-Classic chairs already exceed the 6k triangle budget at the tail (slats/rails on rounded boxes). Build times are Node timings; browser timings come with the perf test (backlog 3.7).
+Every chair is within the 6k triangle budget (2,000-seed classic max 5,392; slats and rails use 2 bevel segments). Curvy legs stand on ferrule feet at y = 0. Build times are Node timings; browser timings come with the perf test (backlog 3.7).
