@@ -153,6 +153,14 @@ try {
   if (localStorage.getItem(PANEL_KEY) === '0') panel.setOpen(false);
 } catch {}
 
+const sidePanel = window.matchMedia('(min-width: 640px)');
+function applySidePanelInset() {
+  const rect = $('panel').getBoundingClientRect();
+  stage?.setInsetLeft(sidePanel.matches ? Math.round((rect.width || 300) + 16) : 0);
+}
+sidePanel.addEventListener('change', applySidePanelInset);
+window.addEventListener('resize', applySidePanelInset);
+
 sheet = createSheet({
   panel: $('panel'),
   viewport,
@@ -303,7 +311,10 @@ async function populateCurrent({ zoomToItem = false } = {}) {
     ok = await grid.populate(options({ single: false }));
     if (ok) {
       gridKey = keyOf();
-      if (scene.mixed && run === epoch) stage.layout(stageLayout(scene, false));
+      if (scene.mixed && run === epoch) {
+        applySidePanelInset();
+        stage.layout(stageLayout(scene, false));
+      }
     }
   }
   if (!ok || run !== epoch) return;
@@ -348,6 +359,7 @@ async function generate({ zoomToItem = false } = {}) {
   $('panel').hidden = true;
   sheet.setVisible(false);
   stepper.hidden = !state.single;
+  applySidePanelInset();
   stage.layout(stageLayout(scene, state.single));
   if (state.single) {
     grid.setVisible(false);

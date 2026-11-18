@@ -44,6 +44,7 @@ export function createStage(viewport) {
   let shadowDirty = true;
   let tween = null;
   let inset = 0;
+  let insetLeft = 0;
   let animateMoves = true;
   const overview = { position: new THREE.Vector3(), target: new THREE.Vector3() };
 
@@ -80,7 +81,16 @@ export function createStage(viewport) {
       overview.position.set(1.45, 1.1, 1.95).multiplyScalar(scale);
       overview.target.set(0, 0.42 * scale, 0);
     } else {
-      overview.position.set(extent * 1.25, extent * 1.2, extent * 1.7).multiplyScalar(fit);
+      const { clientWidth: w, clientHeight: h } = viewport;
+      const available = w && h ? Math.max(w - insetLeft, 1) / Math.max(h - inset, 1) : 1.6;
+      const direction = new THREE.Vector3(1.25, 1.2, 1.7);
+      const preferred = direction.length() * extent * fit;
+      const vHalf = THREE.MathUtils.degToRad(camera.fov) / 2;
+      const hHalf = Math.atan(Math.tan(vHalf) * available);
+      const fitWidth = (extent * fit) / Math.sin(hHalf);
+      const distance = Math.max(preferred, fitWidth);
+      controls.maxDistance = Math.max(controls.maxDistance, distance * 1.5);
+      overview.position.copy(direction.normalize().multiplyScalar(distance));
       overview.target.set(0, 0.3, 0);
     }
     tween = null;
@@ -141,13 +151,20 @@ export function createStage(viewport) {
 
   function applyViewOffset() {
     const { clientWidth: w, clientHeight: h } = viewport;
-    if (inset > 0 && w > 0) camera.setViewOffset(w, h, 0, inset / 2, w, h);
+    if ((inset > 0 || insetLeft > 0) && w > 0) camera.setViewOffset(w, h, -insetLeft / 2, inset / 2, w, h);
     else camera.clearViewOffset();
     camera.updateProjectionMatrix();
   }
 
   function setInset(px) {
     inset = px;
+    applyViewOffset();
+    invalidate();
+  }
+
+  function setInsetLeft(px) {
+    if (px === insetLeft) return;
+    insetLeft = px;
     applyViewOffset();
     invalidate();
   }
@@ -201,6 +218,7 @@ export function createStage(viewport) {
     resetCamera,
     focus,
     setInset,
+    setInsetLeft,
     resize,
     frame,
     renderNow,
