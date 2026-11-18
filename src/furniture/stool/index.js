@@ -54,7 +54,7 @@ export default {
     { id: 'shape', label: 'Shape', reads: ['style'], fields: FIELDS.shape },
     { id: 'footrest', label: 'Footrest', reads: ['style', 'shape'], appliesTo: footrestApplies, fields: FIELDS.footrest },
     { id: 'palette', label: 'Colours', fields: FIELDS.palette },
-    { id: 'pattern', label: 'Pattern', fields: FIELDS.pattern },
+    { id: 'pattern', label: 'Pattern', reads: ['style', 'shape'], fields: FIELDS.pattern },
     { id: 'finish', label: 'Finish', reads: ['style', 'shape', 'palette'], fields: FIELDS.finish },
   ],
 
@@ -83,7 +83,7 @@ export default {
         secondary: p.panSecondary,
         pattern: p.panPattern,
         scale: p.panPatternScale || 1,
-        direction: p.stripeDirection,
+        direction: p.style === 'slab' ? 'horizontal' : p.stripeDirection,
       });
     }
     return BUILDERS[p.style](p, mats);
