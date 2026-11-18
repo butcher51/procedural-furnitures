@@ -1,4 +1,5 @@
-import { hsl, FRAME_COLORS, SECONDARY_MODES, pickWood, secondaryColor } from '../../core/color.js';
+import { FRAME_COLORS, pickWood } from '../../core/color.js';
+import { HARMONY_MODES, capSaturation, fabricColor, harmoniousSecondary, paintColor, shade } from '../../core/palette.js';
 import { rollStyle, weightedPick } from '../../core/rng.js';
 
 export const STYLES = { park: 0.24, garden: 0.18, plank: 0.22, platform: 0.14, upholstered: 0.22 };
@@ -101,10 +102,11 @@ function upholsteredShape(r) {
     seatLength: r.range(0.9, 1.5), seatDepth: r.range(0.36, 0.48), seatHeight: r.range(0.42, 0.48),
     seatThickness: r.range(0.08, 0.16), puff: r.range(0.03, 0.06),
   };
-  const hasBack = r.chance(0.35);
-  const height = r.range(0.2, 0.35);
+  const wantsBack = r.chance(0.3);
+  const height = s.seatThickness + r.range(0.12, 0.22);
   const angle = r.range(4, 10);
-  const thickness = r.range(0.08, 0.14);
+  const thickness = r.range(0.06, 0.1);
+  const hasBack = wantsBack && s.seatLength >= 1.2;
   if (!hasBack) return s;
   return clampBack({
     ...s, hasBack, backStyle: 'cushion', backHeight: height, backAngle: angle, backThickness: thickness, backWidth: s.seatLength,
@@ -237,12 +239,10 @@ export function generateBenchParams(g) {
   const base = g.roll('base', (r) => BASES[style](r, shape));
 
   const palette = g.roll('palette', (r) => {
-    const hue = r.next();
-    const sat = r.range(0.35, 0.75);
-    const light = r.range(0.42, 0.62);
-    const mode = r.pick(SECONDARY_MODES);
-    const paintColor = hsl(hue, r.range(0.35, 0.55), r.range(0.3, 0.45));
-    return { hue, sat, light, mode, paintColor };
+    const fabric = fabricColor(r);
+    const mode = r.pick(HARMONY_MODES);
+    const paint = paintColor(r);
+    return { fabric, mode, paint };
   });
 
   const patterning = g.roll('pattern', (r) => ({
@@ -262,37 +262,42 @@ export function generateBenchParams(g) {
     return { seatMaterial, wood, white, frameMode };
   });
 
-  const { hue, sat, light, mode, paintColor } = palette;
+  const { fabric, mode, paint } = palette;
   const { seatMaterial, wood, white, frameMode } = finish;
-  const fabricColor = hsl(hue, sat, light);
-  const fabricSecondary = secondaryColor(mode, hue);
-  const bodyColor = hsl(hue, sat * 0.85, light - 0.12);
+  const fabricHex = fabric.hex;
+  const fabricSecondary = harmoniousSecondary(fabric, mode).hex;
+  const bodyColor = shade(fabric, -0.12, 0.85).hex;
+  const paintHex = paint.hex;
+  const woodColor = (dl) => capSaturation(wood.h, wood.s, wood.l + dl).hex;
 
   let seatColor;
   let seatSecondary;
   let pattern = 'solid';
   let patternScale = 1;
   if (seatMaterial === 'wood') {
-    seatColor = hsl(wood.h, wood.s, wood.l + 0.04);
-    seatSecondary = hsl(wood.h, wood.s, wood.l - 0.04);
+    seatColor = woodColor(0.04);
+    seatSecondary = woodColor(-0.04);
     pattern = patterning.grainPattern;
     patternScale = patterning.grainScale;
   } else if (seatMaterial === 'fabric') {
-    seatColor = fabricColor;
+    seatColor = fabricHex;
     seatSecondary = fabricSecondary;
     pattern = patterning.fabricPattern;
     patternScale = patterning.fabricScale;
   } else {
-    seatColor = style === 'garden' && white ? FRAME_COLORS.white : paintColor;
+    seatColor = style === 'garden' && white ? FRAME_COLORS.white : paintHex;
     seatSecondary = seatColor;
   }
 
+  const matchSource = seatMaterial === 'painted' ? paint : fabric;
+  const matchShade = shade(matchSource, matchSource.l > 0.4 ? -0.24 : 0.24, 0.8).hex;
+
   const frameColor = {
-    wood: hsl(wood.h, wood.s, wood.l),
+    wood: woodColor(0),
     black: FRAME_COLORS.black,
     white: FRAME_COLORS.white,
     metal: FRAME_COLORS.metal,
-    match: hsl(hue, 0.4, 0.28),
+    match: matchShade,
     painted: seatColor,
   }[frameMode];
 
@@ -302,7 +307,7 @@ export function generateBenchParams(g) {
     style,
     ...shape,
     ...base,
-    fabricColor, fabricSecondary, bodyColor, paintColor,
+    fabricColor: fabricHex, fabricSecondary, bodyColor, paintColor: paintHex,
     fabricPattern: patterning.fabricPattern,
     fabricScale: patterning.fabricScale,
     stripeDirection: patterning.stripeDirection,

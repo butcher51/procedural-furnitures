@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {
-  beam, endPanelShape, extrudeProfile, extrudeUp, normalizeUVs, puffy, strut, superellipseShape,
+  beam, boxProjectUVs, endPanelShape, extrudeProfile, extrudeUp, normalizeUVs, puffy, strut, superellipseShape,
 } from '../../core/geometry.js';
 import { splitSpan } from '../../core/layout.js';
 import { buildApron, buildLegs, buildStretchers, buildTrestle, legLines, rowAnchors } from '../../core/supports.js';
@@ -24,6 +24,16 @@ function sideProfile(shape, thickness, bevel, mat, x) {
   return mesh;
 }
 
+function footCurl(zLeg, yc, rho, dir) {
+  const pts = [];
+  for (let k = 0; k <= 9; k++) {
+    const phi = rad(180 + k * 30);
+    const rr = rho * (1 - 0.4 * (k / 9));
+    pts.push(v2(zLeg + dir * (rho + rr * Math.cos(phi)), yc + rr * Math.sin(phi)));
+  }
+  return pts;
+}
+
 function parkFrameStrokes(p) {
   const scroll = p.support === 'scroll';
   const D = p.seatDepth, H = p.seatHeight, fw = p.frameWidth;
@@ -33,15 +43,16 @@ function parkFrameStrokes(p) {
   const zP = D / 2 - fw / 2;
   const top = v2(zQ - p.backHeight * Math.sin(angle), H + p.backHeight * Math.cos(angle));
 
+  const rho = Math.max(0.04, Math.min(fw, 0.05));
   const frontLeg = scroll
-    ? [v2(zP + 0.05, 0), v2(zP + 0.045, bearerY * 0.3), v2(zP + 0.015, bearerY * 0.6), v2(zP, bearerY * 0.85), v2(zP, bearerY)]
+    ? [...footCurl(zP, 0.867 * rho + fw / 2, rho, 1).reverse(), v2(zP, bearerY)]
     : [v2(zP + 0.04, 0), v2(zP, bearerY)];
   const main = [...frontLeg, v2(zQ, bearerY), v2(zQ, H), top];
 
   const dz = Math.max(0.04, 0.6 * p.backHeight * Math.sin(angle));
   const zr = zQ - dz;
   const rear = scroll
-    ? [v2(zr, 0), v2(zr + 0.2 * dz, bearerY * 0.35), v2(zr + 0.55 * dz, bearerY * 0.7), v2(zQ, bearerY)]
+    ? [...footCurl(zr, 0.867 * rho + fw / 2, rho, -1).reverse(), v2(zQ, bearerY)]
     : [v2(zr, 0), v2(zQ, bearerY)];
   const strokes = [{ points: main, width: fw, floor: true }, { points: rear, width: fw, floor: true }];
 
@@ -51,14 +62,14 @@ function parkFrameStrokes(p) {
     const zUp = zQ - p.armHeight * Math.tan(angle);
     strokes.push({ points: [v2(zP, bearerY), v2(zP, armY)], width: fw, floor: false });
     if (scroll) {
-      const rho = Math.max(aw, 0.035);
-      const zA = zP + 0.6 * aw;
+      const rhoA = Math.max(1.3 * aw, 0.05);
       const curl = [];
-      for (let k = 0; k <= 6; k++) {
-        const phi = rad(-90 + k * 30);
-        curl.push(v2(zA + rho * Math.cos(phi), armY - rho + rho * Math.sin(phi)));
+      for (let k = 0; k <= 9; k++) {
+        const phi = rad(90 - k * 30);
+        const rr = rhoA * (1 - 0.45 * (k / 9));
+        curl.push(v2(zP + rr * Math.cos(phi), armY - rhoA + rr * Math.sin(phi)));
       }
-      strokes.push({ points: [...curl, v2(zUp, armY)], width: aw, floor: false });
+      strokes.push({ points: [v2(zUp, armY), ...curl], width: aw, floor: false });
     } else {
       strokes.push({ points: [v2(zUp, armY), v2(zP - 0.04, armY), v2(zP + 0.02, armY - 0.03)], width: aw, floor: false });
     }
@@ -221,6 +232,7 @@ export function buildUpholstered(p, mats) {
 
   const backDepth = p.hasBack ? p.backThickness : 0;
   const cushion = puffy(L, T, D - backDepth, p.puff, mats.surface);
+  cushion.geometry = boxProjectUVs(cushion.geometry);
   cushion.position.set(0, H - T / 2, backDepth / 2);
   parts.push(cushion);
 
@@ -229,6 +241,7 @@ export function buildUpholstered(p, mats) {
     pivot.position.set(0, H - T, -D / 2 + p.backThickness / 2);
     pivot.rotation.x = -rad(p.backAngle);
     const back = puffy(L, p.backHeight, p.backThickness, p.puff, mats.surface);
+    back.geometry = boxProjectUVs(back.geometry);
     back.position.y = p.backHeight / 2;
     pivot.add(back);
     parts.push(pivot);
