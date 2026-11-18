@@ -186,9 +186,10 @@ function buildPillows(p, L, mats, parts, lo, hi) {
   const size = p.pillowSize;
   const ap = rad(p.pillowAngle);
   const z0 = L.frontZ(p.seatHeight + (size / 2) * Math.cos(ap)) + (size / 2) * Math.sin(ap);
-  const margin = size / 2 + 0.03;
-  const xs = p.pillowCount === 2 ? [lo + margin, hi - margin] : [p.pillowSide === 'left' ? lo + margin : hi - margin];
   const yaw = ((p.pillowAngle - 10) / 12 * 2 - 1) * rad(8);
+  const reach = (size / 2) * Math.cos(yaw) + (p.pillowThickness / 2 + size / 4) * Math.abs(Math.sin(yaw));
+  const margin = reach + 0.03 + p.bodyPuff * 1.5;
+  const xs = p.pillowCount === 2 ? [lo + margin, hi - margin] : [p.pillowSide === 'left' ? lo + margin : hi - margin];
   xs.forEach((x, i) => {
     const pivot = new THREE.Group();
     pivot.rotation.order = 'YXZ';
@@ -276,7 +277,7 @@ function buildChaise(p, mats) {
   parts.push(place(puffy(bodyW, L.bodyH, p.depth, p.bodyPuff, mats.body, 2), 0, p.legHeight + L.bodyH / 2, 0));
 
   const rel = p.headHeight - 0.02;
-  const r = p.headStyle === 'scroll' ? Math.min(0.09, Math.max(0.06, p.headLength * 0.3)) : 0;
+  const r = p.headStyle === 'scroll' ? Math.min(0.09, Math.max(0.06, p.headLength * 0.3)) : 0.045;
   const slabTop = p.headHeight - r;
   const xo = sh * (W / 2), xb = sh * (W / 2 - p.headLength);
   const xt = sh * (W / 2 - p.headLength + (slabTop - p.legHeight) * Math.tan(rad(p.headIncline)));
@@ -293,7 +294,7 @@ function buildChaise(p, mats) {
   if (hasBack) {
     const len = p.backFraction * W;
     const h = p.backTop - p.legHeight;
-    const back = place(puffy(len, h, p.backFrameThickness, p.bodyPuff, mats.surface, 2), sh * (W / 2 - len / 2), p.legHeight + h / 2, L.zBack + p.backFrameThickness / 2, 'back');
+    const back = place(puffy(len, h, p.backFrameThickness, p.bodyPuff, mats.surface, 2), sh * (W / 2 - 0.03 - len / 2), p.legHeight + h / 2, L.zBack + p.backFrameThickness / 2, 'back');
     parts.push(upholster(back));
   }
 
@@ -306,13 +307,18 @@ function buildChaise(p, mats) {
   if (p.pillowCount > 0) {
     const size = p.pillowSize;
     const ap = rad(p.pillowAngle);
+    const yaw = rad(20);
+    const outer = new THREE.Group();
+    outer.position.set(sh * (W / 2 - p.headLength) - sh * (0.004 + (size / 2) * Math.sin(yaw)), 0, 0);
+    outer.rotation.y = sh * yaw;
     const pivot = new THREE.Group();
-    pivot.position.set(sh * (W / 2 - p.headLength) - sh * 0.004, p.seatHeight - tiltDeficit(edgeRadius(size * 0.25, p.pillowThickness, size, size), ap), 0);
+    pivot.position.set(0, p.seatHeight - tiltDeficit(edgeRadius(size * 0.25, p.pillowThickness, size, size), ap), 0);
     pivot.rotation.z = -sh * ap;
     const pillow = puffy(p.pillowThickness, size, size, size * 0.25, mats.accent, 2);
     pillow.position.set(-sh * p.pillowThickness / 2, size / 2, 0);
     pivot.add(pillow);
-    parts.push(pivot);
+    outer.add(pivot);
+    parts.push(outer);
   }
 
   const ins = legInsets({ ...p, armStyle: 'none' });
