@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { grainAlong } from '../../core/patterns.js';
+import { shade, swatch } from '../../core/palette.js';
 import {
   beam, extrudeUp, latheSolid, normalizeUVs, puffy, roundedDiscGeometry, superellipseShape,
 } from '../../core/geometry.js';
@@ -19,12 +21,12 @@ function buildTop(p, mats) {
   if (p.topShape === 'rect') {
     const slab = puffy(p.topLength, p.topThickness, p.topDepth, p.topEdge, mats.top);
     slab.position.y = p.topHeight - p.topThickness / 2;
-    return slab;
+    return grainAlong(slab, 'x');
   }
   const geo = slabGeometry(p.topShape, p.topThickness, p.topEdge, p.topLength, p.topDepth, p.topExponent, p.topSides);
   const mesh = new THREE.Mesh(geo, mats.top);
   mesh.position.y = p.topShape === 'round' ? p.topHeight - p.topThickness / 2 : p.legHeight;
-  return mesh;
+  return grainAlong(mesh, 'x');
 }
 
 function turnedLeg(x, z, height, thickness, blockHeight, mat) {
@@ -40,7 +42,7 @@ function turnedLeg(x, z, height, thickness, blockHeight, mat) {
   lathe.position.set(x, 0, z);
   group.add(lathe);
   group.add(beam(v3(x, h, z), v3(x, height, z), thickness, thickness, Math.min(0.006, thickness * 0.2), mat));
-  return group;
+  return grainAlong(group, 'y');
 }
 
 function buildShelf(p, mats, lines) {
@@ -53,7 +55,7 @@ function buildShelf(p, mats, lines) {
   if (p.shelfShape === 'rect') {
     mesh = puffy((maxX + pad) * 2, t, (maxZ + pad) * 2, 0.004, mats.top);
     mesh.position.y = p.shelfHeight;
-    return mesh;
+    return grainAlong(mesh, 'x');
   }
   let sx, sz, e;
   if (p.legCount === 3) {
@@ -70,7 +72,7 @@ function buildShelf(p, mats, lines) {
   const outline = superellipseShape(sx - bevel, sz - bevel, e);
   mesh = new THREE.Mesh(normalizeUVs(extrudeUp(outline, t, bevel), sx * 2), mats.top);
   mesh.position.y = p.shelfHeight - t / 2;
-  return mesh;
+  return grainAlong(mesh, 'x');
 }
 
 function buildLegged(p, mats) {
@@ -140,19 +142,34 @@ function buildTrestleBase(p, mats) {
 
 const BASES = { legs: buildLegged, pedestal: buildPedestalBase, trestle: buildTrestleBase };
 
+function stoneMaterial(p, m) {
+  if (p.stonePattern === 'terrazzo') {
+    return m.pattern({ kind: 'terrazzo', colors: [p.topColor], seed: p.seed }, { roughness: 0.4 });
+  }
+  const base = swatch(p.topColor);
+  const dir = base.l > 0.5 ? -1 : 1;
+  return m.pattern({
+    kind: 'terrazzo',
+    colors: [p.topColor, shade(base, 0.05 * dir).hex, shade(base, 0.08 * dir).hex],
+    size: 0.006,
+    density: 0.22,
+    seed: p.seed,
+  }, { roughness: 0.4 });
+}
+
+function topMaterial(p, m) {
+  if (p.topFinish === 'wood') return m.wood(p.topColor, { grain: p.grain, seed: p.seed });
+  if (p.topFinish === 'stone') return stoneMaterial(p, m);
+  return m.solid(p.topColor, 0.8);
+}
+
+function frameMaterial(p, m) {
+  if (p.baseMode === 'wood') return m.wood(p.baseColor, { grain: p.grain, seed: p.seed });
+  return m.frame(p.baseColor, p.baseMode);
+}
+
 export function buildTable(p, kit) {
   const m = kit.materials;
-  const stone = p.topFinish === 'stone';
-  const mats = {
-    top: m.surface({
-      color: p.topColor,
-      secondary: p.topSecondary,
-      pattern: p.topPattern,
-      scale: p.topPatternScale,
-      direction: 'horizontal',
-      roughness: stone ? 0.4 : 0.8,
-    }),
-    frame: m.frame(p.baseColor, p.baseMode),
-  };
+  const mats = { top: topMaterial(p, m), frame: frameMaterial(p, m) };
   return [buildTop(p, mats), ...BASES[p.baseKind](p, mats)];
 }

@@ -125,3 +125,30 @@ test('every style builds within the triangle and draw budgets', () => {
   assert.ok(tris[Math.floor(tris.length * 0.95)] <= 4500);
   assert.deepEqual(Object.keys(perStyle).sort(), Object.keys(STYLE_WEIGHTS).sort());
 });
+
+test('wood parts carry grain, stone tops a terrazzo pattern, describe reports both', () => {
+  const kit = createKit({});
+  let wood = 0;
+  let stone = 0;
+  for (const p of all.slice(0, 300)) {
+    const woodUsed = p.topFinish === 'wood' || p.baseMode === 'wood';
+    assert.equal(p.grain === 'none', !woodUsed);
+    assert.equal(p.stonePattern === 'none', p.topFinish !== 'stone');
+    const rows = table.describe(p).sections.find((s) => s.group === 'finish').rows;
+    const parts = mergeByMaterial(groupParts(table.build(p, kit)));
+    const kinds = meshesOf(parts).map((m) => m.material.userData.pattern?.kind);
+    if (p.topFinish === 'wood') {
+      wood++;
+      assert.ok(['fine', 'plain', 'bold'].includes(p.grain));
+      assert.ok(rows[0][1].includes(p.grain + ' grain'));
+      assert.ok(kinds.includes('wood'));
+    }
+    if (p.topFinish === 'stone') {
+      stone++;
+      assert.ok(rows[0][1].includes(p.stoneName));
+      assert.ok(kinds.includes('terrazzo'));
+    }
+    disposeObject(parts);
+  }
+  assert.ok(wood > 20 && stone > 10);
+});
