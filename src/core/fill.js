@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { beam, latheSolid } from './geometry.js';
 import { shade, swatch } from './palette.js';
 import { weightedPick } from './rng.js';
+import { clamp } from './math.js';
 
 export const DECOR_KINDS = ['b', 's', 'vase', 'bowl', 'orb', 'cup', 'box', 'slab', 'frame', 'bin', 'plant'];
 
@@ -19,7 +20,6 @@ const deg = THREE.MathUtils.degToRad;
 const r3 = (v) => Math.round(v * 1000) / 1000;
 const f3 = (v) => Math.floor(v * 1000 + 1e-6) / 1000;
 const ceil3 = (v) => Math.ceil(v * 1000 - 1e-6) / 1000;
-const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 export function paintVertices(geometry, colour) {
   const geo = geometry.index ? geometry.toNonIndexed() : geometry;

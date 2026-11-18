@@ -5,11 +5,11 @@ export const ALL_COUNT = 120;
 export const ALL_ENTRY = { id: ALL_ID, label: 'All' };
 
 export function pickType(seed, number, definitions) {
-  const rng = createRng(`${seed}-all-${number}`);
+  const rng = createRng(`${seed}-all-type-${number}`);
   return weightedPick(rng, definitions.map((definition) => [definition, definition.mixWeight ?? 1]));
 }
 
-const pluralOf = (definition) => definition.plural ?? `${definition.label.toLowerCase()}s`;
+export const pluralOf = (definition) => definition.plural ?? `${definition.label.toLowerCase()}s`;
 
 export function createScene(typeId, seed, definitions) {
   if (typeId === ALL_ID) {

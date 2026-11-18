@@ -29,7 +29,7 @@ First-time setup: `npm install && npx playwright install chromium`.
 
 - **Buildless.** Native ES modules, three.js 0.170.0 via importmap in the browser and via the npm devDependency in Node.
 - **All randomness lives in `generateParams`.** `build` is a pure function of params. No `Math.random`, no DOM in params/build.
-- **The seed is the URL.** Existing chair links (`?seed=abc`, item seeds `${seed}-${n}` from 1) must reproduce exactly: same params, so the same chair design, colours and dimensions.
+- **The seed is the URL.** Existing chair links (`?seed=abc`, item seeds `${seed}-${n}` from 1) must reproduce exactly: same params, so the same chair design, colours and dimensions. Since grids shrank to 13×13, solo links (`view=single&item=N`) still open any item number; grid links only select items within the grid.
 - **Merge by material**, real-world meters, low-poly flat shading with soft bevels.
 - URL state: `?type=&seed=&item=N&view=single&anim=0&r=42.palette2.shape1~7.finish1`. `html[data-ready]` is set when the scene is built.
 - The chair golden test (`tests/unit/chair-golden.test.js`) must always pass. `chair-params.json` is frozen and never regenerated. `chair-geometry.json` (triangle counts, position checksums) may only change through a deliberate, human-approved geometry fix, regenerated with `tests/golden/update-geometry.mjs` and reviewed per style; the curvy-feet and classic-bevel fix (PR #4) is the one such change so far.

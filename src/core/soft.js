@@ -1,6 +1,6 @@
 import * as THREE from 'three';
+import { clamp } from './math.js';
 
-const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const HALF_PI = Math.PI / 2;
 
 export const DRAPE_TRI_CAP = 900;

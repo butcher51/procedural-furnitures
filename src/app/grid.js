@@ -43,6 +43,7 @@ export function createShowroom({ scene, kit, onProgress }) {
   let markerWanted = false;
   let mixed = false;
   let packed = { rows: [], positions: [], width: 0, depth: 0 };
+  let layoutPending = false;
 
   const group = new THREE.Group();
   scene.add(group);
@@ -64,6 +65,8 @@ export function createShowroom({ scene, kit, onProgress }) {
       if (item.dot) group.remove(item.dot);
     }
     items = [];
+    packed = { rows: [], positions: [], width: 0, depth: 0 };
+    layoutPending = false;
     markerWanted = false;
     marker.visible = false;
   }
@@ -199,7 +202,13 @@ export function createShowroom({ scene, kit, onProgress }) {
     item.popped = instant;
   }
 
-  function rebuild(index, rolls, { quiet = false } = {}) {
+  function flushLayout() {
+    if (!layoutPending) return;
+    layoutPending = false;
+    relayout();
+  }
+
+  function rebuild(index, rolls, { quiet = false, deferLayout = false } = {}) {
     const item = items[index];
     const { params, object } = makeItem(item.definition, item.seed, item.number, rolls);
     const before = item.foot;
@@ -214,7 +223,8 @@ export function createShowroom({ scene, kit, onProgress }) {
     item.rollKey = rollKey(rolls);
     item.revealAt = performance.now();
     const moved = mixed && ['w', 'd', 'cx', 'cz'].some((k) => Math.abs(item.foot[k] - before[k]) > 0.002);
-    if (moved) relayout();
+    if (moved && deferLayout) layoutPending = true;
+    else if (moved) relayout();
     else if (mixed) place(item, item.center.x, item.center.z);
     reveal(item, quiet || !animate);
     placeDot(item, item.rollKey !== '');
@@ -263,6 +273,7 @@ export function createShowroom({ scene, kit, onProgress }) {
   return {
     populate,
     rebuild,
+    flushLayout,
     tick,
     mark,
     clear,

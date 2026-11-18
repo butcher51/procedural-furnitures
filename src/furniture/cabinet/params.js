@@ -1,14 +1,12 @@
 import { hsl, pickWood, pickLeather, STONE_TONES, FRAME_COLORS } from '../../core/color.js';
 import { paintColor, accentColor, capSaturation, harmoniousSecondary, shade, swatch } from '../../core/palette.js';
-import { rollStyle, rollCycle, weightedPick } from '../../core/rng.js';
+import { rollStyle, rollCycle, weightedPickAt as pickU } from '../../core/rng.js';
 import { lerp } from '../../core/math.js';
 import { CABINET_TEMPLATES, TEMPLATE_WEIGHTS } from './templates.js';
 
 export const STYLE_WEIGHTS = { midcentury: 0.3, shaker: 0.26, industrial: 0.2, modern: 0.24 };
 export const KIND_WEIGHTS = { sideboard: 0.3, dresser: 0.28, nightstand: 0.22, tv: 0.2 };
 
-const at = (u) => ({ next: () => u });
-const pickU = (u, weights) => weightedPick(at(u), weights);
 const draws = (r, n) => Array.from({ length: n }, () => r.next());
 
 const WIDTH = { sideboard: [1.2, 1.95], lowDresser: [0.9, 1.6], tallChest: [0.7, 1.0], nightstand: [0.4, 0.6], tv: [1.2, 1.95] };

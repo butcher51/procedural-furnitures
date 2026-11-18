@@ -1,6 +1,6 @@
 import { FRAME_COLORS, hsl, pickLeather, pickWood } from '../../core/color.js';
 import { PAINTS, capSaturation, harmoniousSecondary, paintColor, shade, swatch } from '../../core/palette.js';
-import { rollStyle, weightedPick } from '../../core/rng.js';
+import { rollStyle, weightedPickAt as pickU } from '../../core/rng.js';
 import { clamp, lerp } from '../../core/math.js';
 import {
   KNEE_MIN, PEDESTAL_SETBACK, addonBack, drawerTotals, hasFronts, kneeSpan, laptopFootprint, legPlan, riserWidth, stackFootprint,
@@ -9,8 +9,6 @@ import {
 
 export const STYLE_WEIGHTS = { writing: 0.24, pedestal: 0.28, trestle: 0.16, standing: 0.18, panel: 0.14 };
 
-const at = (u) => ({ next: () => u });
-const pickU = (u, weights) => weightedPick(at(u), weights);
 const mm = (v) => Math.round(v * 1000) / 1000;
 
 const WIDTH = { writing: [0.9, 1.3], pedestal: [1.4, 1.8], trestle: [1.3, 1.8], standing: [1.0, 1.6], panel: [1.0, 1.6] };

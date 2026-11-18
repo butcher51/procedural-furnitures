@@ -5,7 +5,7 @@ import * as registry from '../furniture/registry.js';
 import { createShowroom, rollKey } from './grid.js';
 import { createHelp } from './help.js';
 import { attachKeys } from './keys.js';
-import { ALL_COUNT, ALL_ENTRY, ALL_ID, createScene } from './mix.js';
+import { ALL_COUNT, ALL_ENTRY, ALL_ID, createScene, pluralOf } from './mix.js';
 import { screenshotName, stepIndex } from './nav.js';
 import { canRoll, shortcutGroups } from '../core/item.js';
 import { createPanel } from './panel.js';
@@ -86,7 +86,6 @@ const loaderUi = (() => {
 })();
 
 const kit = createKit({ textureFactory: canvasPatternTexture });
-const pluralOf = (definition) => definition.plural ?? `${definition.label.toLowerCase()}s`;
 let sceneCache = { key: '', scene: null };
 const sceneOf = () => {
   const key = keyOf();
@@ -232,11 +231,12 @@ function reconcile(showroom) {
   showroom.items.forEach((item, index) => {
     const rolls = rollsFor(item.number);
     if (rollKey(rolls) !== item.rollKey) {
-      showroom.rebuild(index, rolls);
+      showroom.rebuild(index, rolls, { deferLayout: true });
       changed++;
     }
   });
   if (changed) {
+    showroom.flushLayout?.();
     showroom.mark(selected, !state.single);
     stage.invalidate({ shadow: true });
   }
@@ -347,7 +347,7 @@ async function generate({ zoomToItem = false } = {}) {
   const scene = sceneOf();
   toolbar.setType(state.type);
   toolbar.setSeed(state.seed);
-  if (state.item && state.item > scene.count) state.item = null;
+  if (state.item && state.item > scene.count && !state.single) state.item = null;
   if (!stage) {
     replaceUrl();
     return;
@@ -404,7 +404,7 @@ function toggleSolo() {
 }
 
 function stepSolo(delta) {
-  const total = sceneOf().count;
+  const total = Math.max(sceneOf().count, state.item ?? 1);
   state.item = ((((state.item ?? 1) - 1 + delta) % total) + total) % total + 1;
   epoch++;
   solo.cancel();
