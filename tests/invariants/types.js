@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import * as cabinetChecks from './cabinet-checks.js';
 
 const CENTRED_TOLERANCE = 0.002;
 const ABOVE_SEAT = 0.02;
@@ -213,4 +214,9 @@ function sofaCushionsInsideArms({ params, partMeshes }) {
 TYPE_RULES.sofa = {
   maxSize: { width: 2.6, height: 1.0, depth: 2.0 },
   checks: [sofaCentred, sofaArmsSymmetric, sofaBackAtRear, sofaSeatHeight, sofaCushionsInsideArms],
+};
+
+TYPE_RULES.cabinet = {
+  maxSize: { width: 2.0, height: 1.42, depth: 0.6 },
+  checks: [centredInX, cabinetChecks.formWindow, cabinetChecks.frontsInField, cabinetChecks.handlesOnFronts, cabinetChecks.materialsAtMost4, cabinetChecks.baseUnderTop],
 };
