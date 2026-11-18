@@ -8,7 +8,7 @@ export default {
   label: 'Sofa',
   plural: 'sofas',
   styles: STYLES,
-  cell: { spacing: 2.8, gridSize: 15 },
+  cell: { spacing: 2.8, gridSize: 9 },
   groups: [
     { id: 'style', label: 'Style', fields: ['style'] },
     {

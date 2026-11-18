@@ -52,10 +52,8 @@ export function createStage(viewport) {
     if (shadow) shadowDirty = true;
   };
 
-  function layout({ gridSize, spacing, single }) {
-    const size = single ? 1 : gridSize;
-    const extent = ((size - 1) / 2) * spacing + 1;
-    const scale = spacing / 1.7;
+  function layout({ side, floor, divisions, scale, single, fit = 1 }) {
+    const extent = Math.max(side, 0) / 2 + 1;
 
     camera.far = extent * 10 + 50;
     camera.updateProjectionMatrix();
@@ -73,7 +71,7 @@ export function createStage(viewport) {
       floorGrid.geometry.dispose();
       floorGrid.material.dispose();
     }
-    floorGrid = new THREE.GridHelper(gridSize * spacing, gridSize * 4, '#d8d1c5', '#e2ddd4');
+    floorGrid = new THREE.GridHelper(floor ?? side + 1, divisions, '#d8d1c5', '#e2ddd4');
     floorGrid.position.y = 0.001;
     floorGrid.visible = !single;
     scene.add(floorGrid);
@@ -82,7 +80,7 @@ export function createStage(viewport) {
       overview.position.set(1.45, 1.1, 1.95).multiplyScalar(scale);
       overview.target.set(0, 0.42 * scale, 0);
     } else {
-      overview.position.set(extent * 1.25, extent * 1.2, extent * 1.7);
+      overview.position.set(extent * 1.25, extent * 1.2, extent * 1.7).multiplyScalar(fit);
       overview.target.set(0, 0.3, 0);
     }
     tween = null;

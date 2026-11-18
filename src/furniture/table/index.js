@@ -47,7 +47,7 @@ export default {
   label: 'Table',
   plural: 'tables',
   styles: STYLE_WEIGHTS,
-  cell: { spacing: 2.3, gridSize: 17 },
+  cell: { spacing: 2.3, gridSize: 9 },
   groups: [
     { id: 'style', label: 'Style', fields: ['style'] },
     {

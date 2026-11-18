@@ -43,7 +43,7 @@ export default {
   label: 'Bench',
   plural: 'benches',
   styles: STYLES,
-  cell: { spacing: 2.2, gridSize: 17 },
+  cell: { spacing: 2.2, gridSize: 9 },
   groups: [
     { id: 'style', label: 'Style', fields: ['style'] },
     {

@@ -1,9 +1,11 @@
+import * as THREE from 'three';
 import { createKit } from '../core/kit.js';
 import { canvasPatternTexture } from '../core/materials.js';
 import * as registry from '../furniture/registry.js';
 import { createShowroom, rollKey } from './grid.js';
 import { createHelp } from './help.js';
 import { attachKeys } from './keys.js';
+import { ALL_COUNT, ALL_ENTRY, ALL_ID, createScene } from './mix.js';
 import { screenshotName, stepIndex } from './nav.js';
 import { canRoll, shortcutGroups } from '../core/item.js';
 import { createPanel } from './panel.js';
@@ -25,7 +27,8 @@ const ZOOM_DISTANCE = 3.2;
 
 const types = registry.list();
 const state = readState(location.search);
-const unknownType = registry.has(state.type) ? null : state.type;
+const validType = (id) => id === ALL_ID || registry.has(id);
+const unknownType = validType(state.type) ? null : state.type;
 if (unknownType) state.type = 'chair';
 state.seed ||= randomSeed();
 
@@ -84,13 +87,19 @@ const loaderUi = (() => {
 
 const kit = createKit({ textureFactory: canvasPatternTexture });
 const pluralOf = (definition) => definition.plural ?? `${definition.label.toLowerCase()}s`;
+let sceneCache = { key: '', scene: null };
+const sceneOf = () => {
+  const key = keyOf();
+  if (sceneCache.key !== key) sceneCache = { key, scene: createScene(state.type, state.seed, types) };
+  return sceneCache.scene;
+};
 
 const grid = stage
   ? createShowroom({
       scene: stage.scene,
       kit,
-      onProgress(done, total, definition) {
-        loaderUi.progress(`Generating ${pluralOf(definition)}… ${done} / ${total}`, done, total);
+      onProgress(done, total) {
+        loaderUi.progress(`Generating ${sceneOf().plural}… ${done} / ${total}`, done, total);
       },
     })
   : null;
@@ -105,7 +114,7 @@ const room = () => (state.single ? solo : grid);
 const keyOf = () => `${state.type}|${state.seed}`;
 const rollsFor = (number) => state.rerolls.get(number) ?? {};
 const currentItem = () => room()?.items[selected];
-const currentDefinition = () => registry.get(state.type);
+const currentDefinition = () => currentItem()?.definition ?? sceneOf().resolve(state.item ?? 1).definition;
 
 const urlOf = () => writeState(state);
 const replaceUrl = () => history.replaceState(null, '', urlOf());
@@ -175,9 +184,10 @@ function describeCanvas() {
   const item = currentItem();
   const definition = currentDefinition();
   if (!stage || !item) return;
+  const scene = sceneOf();
   const label = state.single
     ? `${definition.label} ${item.number}, solo view`
-    : `Grid of ${grid.items.length} ${pluralOf(definition)}, ${definition.label.toLowerCase()} ${item.number} selected`;
+    : `Grid of ${grid.items.length} ${scene.mixed ? 'mixed items' : scene.plural}, ${definition.label.toLowerCase()} ${item.number} selected`;
   stage.renderer.domElement.setAttribute('role', 'img');
   stage.renderer.domElement.setAttribute('aria-label', label);
   $('stepper-label').textContent = `${definition.label} ${item.number}`;
@@ -218,7 +228,10 @@ function reconcile(showroom) {
       changed++;
     }
   });
-  if (changed) stage.invalidate({ shadow: true });
+  if (changed) {
+    showroom.mark(selected, !state.single);
+    stage.invalidate({ shadow: true });
+  }
   return changed;
 }
 
@@ -226,6 +239,7 @@ function applyRolls(number, rolls, flash = false) {
   if (Object.keys(rolls).length) state.rerolls.set(number, rolls);
   else state.rerolls.delete(number);
   room().rebuild(selected, rolls);
+  room().mark(selected, !state.single);
   stage.invalidate({ shadow: true });
   replaceUrl();
   toolbar.setRollCount(state.rerolls.size);
@@ -259,23 +273,26 @@ function clearAllRolls() {
 
 async function populateCurrent({ zoomToItem = false } = {}) {
   const run = epoch;
-  const definition = currentDefinition();
+  const scene = sceneOf();
   const single = state.single;
-  const total = definition.cell.gridSize ** 2;
-  const plural = pluralOf(definition);
+  const total = scene.count;
+  const plural = scene.plural;
+  const options = (extra) => ({
+    resolve: scene.resolve,
+    mixed: scene.mixed && !single,
+    gridSize: scene.gridSize,
+    count: scene.count,
+    spacing: scene.spacing,
+    rerolls: state.rerolls,
+    animate: motion(),
+    ...extra,
+  });
   let ok;
 
   if (single) {
     state.item ??= 1;
-    loaderUi.begin(`Generating ${definition.label.toLowerCase()} ${state.item}…`, false);
-    ok = await solo.populate({
-      definition,
-      seed: state.seed,
-      single: true,
-      item: state.item,
-      rerolls: state.rerolls,
-      animate: motion(),
-    });
+    loaderUi.begin(`Generating ${scene.resolve(state.item).definition.label.toLowerCase()} ${state.item}…`, false);
+    ok = await solo.populate(options({ single: true, item: state.item }));
   } else if (gridKey === keyOf() && grid.items.length) {
     reconcile(grid);
     ok = true;
@@ -283,15 +300,11 @@ async function populateCurrent({ zoomToItem = false } = {}) {
     gridKey = null;
     loaderUi.begin(`Generating ${plural}… 0 / ${total}`, true);
     toast.announce(`Generating ${plural}`);
-    ok = await grid.populate({
-      definition,
-      seed: state.seed,
-      single: false,
-      item: state.item,
-      rerolls: state.rerolls,
-      animate: motion(),
-    });
-    if (ok) gridKey = keyOf();
+    ok = await grid.populate(options({ single: false }));
+    if (ok) {
+      gridKey = keyOf();
+      if (scene.mixed && run === epoch) stage.layout(stageLayout(scene, false));
+    }
   }
   if (!ok || run !== epoch) return;
 
@@ -313,17 +326,16 @@ function focusSelected() {
   const item = grid.items[selected];
   if (!item) return;
   zoomed = true;
-  stage.focus(item.object.position, ZOOM_DISTANCE * (currentDefinition().cell.spacing / 1.7));
+  stage.focus(new THREE.Vector3(item.center.x, 0, item.center.z), ZOOM_DISTANCE * Math.max(item.markerRadius / 0.65, 0.9));
 }
 
 async function generate({ zoomToItem = false } = {}) {
   epoch++;
   delete root.dataset.ready;
-  const definition = currentDefinition();
+  const scene = sceneOf();
   toolbar.setType(state.type);
   toolbar.setSeed(state.seed);
-  const count = definition.cell.gridSize ** 2;
-  if (state.item && state.item > count) state.item = null;
+  if (state.item && state.item > scene.count) state.item = null;
   if (!stage) {
     replaceUrl();
     return;
@@ -336,7 +348,7 @@ async function generate({ zoomToItem = false } = {}) {
   $('panel').hidden = true;
   sheet.setVisible(false);
   stepper.hidden = !state.single;
-  stage.layout({ ...definition.cell, single: state.single });
+  stage.layout(stageLayout(scene, state.single));
   if (state.single) {
     grid.setVisible(false);
     grid.mark(-1, false);
@@ -353,7 +365,7 @@ async function generate({ zoomToItem = false } = {}) {
 }
 
 function switchType(id) {
-  if (id === state.type || !registry.has(id)) return;
+  if (id === state.type || !validType(id)) return;
   state.type = id;
   state.item = null;
   state.rerolls = new Map();
@@ -379,7 +391,7 @@ function toggleSolo() {
 }
 
 function stepSolo(delta) {
-  const total = currentDefinition().cell.gridSize ** 2;
+  const total = sceneOf().count;
   state.item = ((((state.item ?? 1) - 1 + delta) % total) + total) % total + 1;
   epoch++;
   solo.cancel();
@@ -396,7 +408,11 @@ function step(key) {
     return;
   }
   if (selected < 0) return;
-  const next = stepIndex(selected, key, { count: grid.items.length, gridSize: currentDefinition().cell.gridSize });
+  const scene = sceneOf();
+  const vertical = key === 'ArrowUp' ? -1 : key === 'ArrowDown' ? 1 : 0;
+  const next = scene.mixed && vertical
+    ? grid.neighbor(selected, vertical)
+    : stepIndex(selected, key, { count: grid.items.length, gridSize: scene.gridSize });
   if (next === selected) return;
   select(next);
   if (zoomed) focusSelected();
@@ -429,6 +445,23 @@ function escape() {
   if (zoomed) resetCamera();
 }
 
+function stageLayout(scene, single) {
+  if (single) return { side: 0, divisions: 1, scale: scene.spacing / 1.7, single: true };
+  if (scene.mixed) {
+    const { width, depth } = grid.extent;
+    const side = width || depth ? Math.max(width, depth) : Math.sqrt(ALL_COUNT) * scene.spacing * 0.6;
+    const divisions = Math.ceil((side + 1) / 0.5);
+    return { side, floor: divisions * 0.5, divisions, scale: 1, single: false, fit: 1.12 };
+  }
+  return {
+    side: (scene.gridSize - 1) * scene.spacing,
+    floor: scene.gridSize * scene.spacing,
+    divisions: scene.gridSize * 4,
+    scale: scene.spacing / 1.7,
+    single: false,
+  };
+}
+
 function resetCamera() {
   zoomed = false;
   stage?.resetCamera();
@@ -440,7 +473,7 @@ const toolbar = attachToolbar({
   chipGroup: $('chips'),
   moreButton: $('more'),
   menu: $('menu'),
-  types,
+  types: [ALL_ENTRY, ...types],
   onSeed: setSeed,
   onType: switchType,
   onHelp: () => help.open(),
@@ -480,7 +513,7 @@ stepper.addEventListener('click', (e) => {
 attachKeys({
   help: () => help.toggle(),
   dialogOpen: () => help.isOpen,
-  type: (index) => types[index] && switchType(types[index].id),
+  type: (digit) => (digit === 0 ? switchType(ALL_ID) : types[digit - 1] && switchType(types[digit - 1].id)),
   step,
   regenerate: () => setSeed(randomSeed()),
   shortcut(letter, delta) {
@@ -498,7 +531,7 @@ attachKeys({
 
 window.addEventListener('popstate', () => {
   const next = readState(location.search);
-  if (!registry.has(next.type)) next.type = 'chair';
+  if (!validType(next.type)) next.type = 'chair';
   next.seed ||= state.seed;
   const rebuildAll = next.type !== state.type || next.seed !== state.seed;
   const viewChanged = next.single !== state.single;

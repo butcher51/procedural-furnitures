@@ -10,7 +10,7 @@ export default {
   label: 'Chair',
   plural: 'chairs',
   styles: { classic: 0.35, curvy: 0.3, cozy: 0.35 },
-  cell: { spacing: 1.7, gridSize: 25 },
+  cell: { spacing: 1.7, gridSize: 13 },
   legacyRng: true,
   itemSeed: (sceneSeed, number) => `${sceneSeed}-${number}`,
   groups: [

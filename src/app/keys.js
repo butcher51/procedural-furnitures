@@ -28,9 +28,9 @@ export function attachKeys(handlers) {
     const onButton = Boolean(target.closest?.('button, [role="button"], [role="menuitem"]'));
     const key = e.key.toLowerCase();
 
-    const digit = /^Digit([1-9])$/.exec(e.code);
+    const digit = /^Digit([0-9])$/.exec(e.code);
     if (digit && !e.shiftKey) {
-      handlers.type(Number(digit[1]) - 1);
+      handlers.type(Number(digit[1]));
       return;
     }
 

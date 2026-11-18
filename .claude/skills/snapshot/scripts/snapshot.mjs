@@ -80,7 +80,8 @@ try {
     await waitReady(single);
     await single.addStyleTag({ content: '#viewport > :not(canvas) { display: none !important; }' });
     const png = await single.locator('#viewport canvas').screenshot();
-    shots.push({ label: `${args.seed} #${item}`, src: `data:image/png;base64,${png.toString('base64')}` });
+    const solo = args.type === 'all' ? (await single.locator('#viewport canvas').getAttribute('aria-label')).split(',')[0] : '';
+    shots.push({ label: solo ? `${args.seed} ${solo}` : `${args.seed} #${item}`, src: `data:image/png;base64,${png.toString('base64')}` });
   }
 
   const sheet = await browser.newPage({ viewport: { width: cols * (size + 8) + 24, height: 400 } });

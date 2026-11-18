@@ -14,7 +14,7 @@ const all = SEEDS.map((n) => gen(n));
 
 test('table is registered with plural and cell', () => {
   assert.equal(table.plural, 'tables');
-  assert.deepEqual(table.cell, { spacing: 2.3, gridSize: 17 });
+  assert.deepEqual(table.cell, { spacing: 2.3, gridSize: 9 });
 });
 
 test('same seed gives deep-equal params, same rerolls too', () => {

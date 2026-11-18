@@ -48,7 +48,7 @@ export default {
   label: 'Stool',
   plural: 'stools',
   styles: STYLES,
-  cell: { spacing: 1.2, gridSize: 25 },
+  cell: { spacing: 1.2, gridSize: 13 },
   groups: [
     { id: 'style', label: 'Style', fields: FIELDS.style },
     { id: 'shape', label: 'Shape', reads: ['style'], fields: FIELDS.shape },

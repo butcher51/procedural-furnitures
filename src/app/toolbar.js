@@ -29,7 +29,7 @@ export function attachToolbar({ seedInput, regenButton, chipGroup, moreButton, m
       chip.setAttribute('role', 'radio');
       chip.dataset.type = definition.id;
       chip.textContent = definition.label;
-      chip.title = index < 9 ? `${definition.label} (${index + 1})` : definition.label;
+      chip.title = index <= 9 ? `${definition.label} (${index})` : definition.label;
       return chip;
     })
   );
