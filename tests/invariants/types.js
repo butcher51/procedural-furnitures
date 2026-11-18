@@ -32,3 +32,42 @@ export const TYPE_RULES = {
     checks: [centredInX, chairBackAtRear],
   },
 };
+
+function aboveSeat({ params, mergedMeshes }, visit) {
+  const threshold = params.seatHeight + ABOVE_SEAT;
+  for (const mesh of mergedMeshes) {
+    const position = mesh.geometry.attributes.position;
+    for (let i = 0; i < position.count; i++) {
+      if (position.getY(i) > threshold) visit(position.getX(i), position.getZ(i));
+    }
+  }
+}
+
+function benchBackAtRear(context) {
+  if (!context.params.hasBack) return [];
+  let min = Infinity;
+  let max = -Infinity;
+  aboveSeat(context, (x, z) => {
+    min = Math.min(min, z);
+    max = Math.max(max, z);
+  });
+  if (min === Infinity) return ['front facing: bench has a back but nothing rises above the seat'];
+  const centre = (min + max) / 2;
+  return centre < 0 ? [] : [`front facing: geometry above the seat spans z [${min.toFixed(3)}, ${max.toFixed(3)}], not behind the seat`];
+}
+
+function benchArmsSymmetric(context) {
+  if (!context.params.hasArms) return [];
+  let min = Infinity;
+  let max = -Infinity;
+  aboveSeat(context, (x) => {
+    min = Math.min(min, x);
+    max = Math.max(max, x);
+  });
+  return Math.abs(max + min) <= CENTRED_TOLERANCE ? [] : [`arms symmetric: x extent above the seat is [${min.toFixed(3)}, ${max.toFixed(3)}]`];
+}
+
+TYPE_RULES.bench = {
+  maxSize: { width: 1.95, height: 0.95, depth: 0.8 },
+  checks: [centredInX, benchBackAtRear, benchArmsSymmetric],
+};

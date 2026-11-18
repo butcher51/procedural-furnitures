@@ -22,3 +22,5 @@ export function list() {
 }
 
 register(chair);
+import bench from './bench/index.js';
+register(bench);
