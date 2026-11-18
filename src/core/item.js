@@ -24,3 +24,24 @@ export function generateItem(definition, sceneSeed, number, rerolls = {}, dna = 
 export function buildItem(definition, params, kit) {
   return mergeByMaterial(groupParts(definition.build(params, kit)));
 }
+
+export function groupApplies(definition, groupId, params) {
+  const group = definition.groups.find((g) => g.id === groupId);
+  return group?.appliesTo ? group.appliesTo(params) !== false : true;
+}
+
+export function canRoll(definition, groupId, params) {
+  const group = definition.groups.find((g) => g.id === groupId);
+  return Boolean(group) && group.rerollable !== false && groupApplies(definition, groupId, params);
+}
+
+const SECONDARY_GROUPS = new Set(['style', 'palette', 'pattern', 'finish']);
+
+export function shortcutGroups(definition) {
+  const rollable = definition.groups.filter((g) => g.rerollable !== false);
+  const has = (id) => rollable.some((g) => g.id === id);
+  return {
+    c: has('palette') ? 'palette' : null,
+    s: has('shape') ? 'shape' : rollable.find((g) => !SECONDARY_GROUPS.has(g.id))?.id ?? null,
+  };
+}

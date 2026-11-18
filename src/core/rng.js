@@ -48,3 +48,32 @@ export function createGroupedRng(itemSeed, rerolls = {}, { legacy = false, fixed
   };
 }
 
+
+const weightEntries = (weights) => (Array.isArray(weights) ? weights : Object.entries(weights));
+
+export function weightedPick(r, weights) {
+  const entries = weightEntries(weights);
+  const total = entries.reduce((sum, [, w]) => sum + w, 0);
+  let x = r.next() * total;
+  for (const [value, w] of entries) {
+    if (x < w) return value;
+    x -= w;
+  }
+  return entries[entries.length - 1][0];
+}
+
+export function weightedShuffle(r, weights) {
+  return weightEntries(weights)
+    .map(([value, w]) => ({ value, key: w > 0 ? r.next() ** (1 / w) : (r.next(), -1) }))
+    .sort((a, b) => b.key - a.key)
+    .map(({ value }) => value);
+}
+
+export function rollStyle(g, styles) {
+  const base = weightedPick(createRng(`${g.seed}/style/0`), styles);
+  const n = g.count('style');
+  if (n === 0) return base;
+  const others = weightEntries(styles).filter(([value]) => value !== base);
+  const cycle = [...weightedShuffle(createRng(`${g.seed}/style/order`), others), base];
+  return cycle[(n - 1) % cycle.length];
+}

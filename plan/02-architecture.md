@@ -70,7 +70,7 @@ export default {
 |---|---|
 | `styles` | Style ids mapped to their roll weights. Tests check the observed distribution against these. |
 | `cell` | Grid spacing in meters and grid size, so big items (beds) get fewer, wider cells. |
-| `groups` | The re-rollable parameter groups, in the order they are rolled. Later groups may read earlier groups' results, but not the other way round. |
+| `groups` | The re-rollable parameter groups, in the order they are rolled. Later groups may read earlier groups' results, but not the other way round. Each group lists the `fields` it owns and the earlier groups it `reads`. `rerollable: false` fixes a group (chair `style`). Optional `appliesTo(params) → boolean`: pure, never affects generation; when false the panel hides the group's ⟳ and the re-roll test skips its change rate for that seed (a re-roll must then change no field outside the group's own). `core/item.js` exposes `groupApplies(def, id, params)`, `canRoll(def, id, params)` and `shortcutGroups(def)`. |
 | `generateParams(g, dna)` | Pure. Draws randomness only through `g.roll(groupId, fn)` (see below). Returns plain JSON-serialisable data that always includes `seed`, `type` and `style`. |
 | `build(params, kit)` | Pure. Returns an array of `Object3D` parts in item space: y-up, standing on y = 0, front faces +z, centred on x/z. |
 | `describe(params)` | Returns `{ sections: [{ group, rows: [[label, value]] }], swatches: [hex] }`. Rows are grouped so the panel can put a re-roll button on each section. |
@@ -101,6 +101,11 @@ group's roll counter starts at 0, and rerolls are stored as `{ palette: 2, shape
 The chair's groups are style → shape → palette → pattern → finish, which matches the existing draw order in
 `generateParams`. The chair cannot re-roll `style` in legacy mode: a different style makes the shape step consume a
 different number of draws, which would shift every later group. "Next item" covers that case.
+
+Modern types roll their style with `rollStyle(g, styles)` (`core/rng.js`) and keep `style` rerollable. Re-roll 0 is a
+weighted pick on the `style/0` stream. Re-rolls 1…k−1 step through every other style once, in a weighted-shuffle order
+drawn from `${itemSeed}/style/order`, and re-roll k returns the base style. Palette and pattern streams do not read
+style, so a style re-roll keeps the colourway.
 
 Dependencies: a group may read results of earlier groups (e.g. `finish` reads `style` for the wood chance). Re-rolling an
 earlier group can therefore change what a later group means, though never its random draws. For example, a chair whose

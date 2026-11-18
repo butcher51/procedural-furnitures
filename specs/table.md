@@ -282,3 +282,25 @@ What I changed:
    - `turnedLeg` stays table-local on `latheSolid` (A7, R7).
 7. Rails, feet, cleats and posts use `beam` instead of low-segment `puffy` (R3), and the budget table is updated.
 8. Open questions 3, 4 and 5 are struck; 1, 2, 6, 7 and 8 are annotated.
+
+### Kit landed (backlog 2.8): notes for the generator engineer
+
+All helpers this spec uses are in core on branch `kit-additions`, including `latheSolid` (A7), so `turnedLeg` can be
+built now and the turned → tapered fallback is not needed. Differences from the text above:
+
+1. **Palette `appliesTo` reads later-group fields.** It depends on `topFinish`/`baseMode`, which `finish` (group 5) owns,
+   so the palette group cannot neutralise `paint`/`accent` (R2's neutral-value rule only works when earlier groups decide
+   applicability). Keep `paint` and `accent` drawn as specified. The re-roll test accepts this: where `appliesTo` is
+   false it requires only that a palette re-roll changes no field outside `paint`/`accent`, so `topColor`/`baseColor`
+   must not depend on `paint`/`accent` unless something is painted, and `build` must read colours only through
+   `topColor`/`baseColor`. `describe` should list paint/accent only when the group applies.
+2. **X trestle stretcher height.** `buildTrestle` places the X stretcher at the crossing itself and ignores
+   `stretcherHeight` for X (slanted ends are pulled in so corners stay within y 0…`top`). If `trestleStretcherHeight`
+   stays a param for describe, treat it as approximate; do not use it to place other parts on an X frame.
+3. **A/X member section.** A posts, X beams, the A crossbar and the long stretcher are `beamWidth × beamWidth`; `postDepth`
+   is used for the I post only (default `beamWidth`).
+4. **`buildPedestal` extras.** Cross/tripod arm width is `armWidth` (default `1.6 × columnRadius`); pass it if the spec
+   wants thinner arms. Bases larger than ⌀ 0.8 m use 16 sides.
+5. **`buildApron`** takes an optional `radius` (default 0.004) for the rail edge.
+6. **Stretchers `h`** need two rows (≥ 2 legs at z > 0 and ≥ 2 at z < 0) and throw otherwise; resolve the 3-leg fallback
+   in params as specified.
