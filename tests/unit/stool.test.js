@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createKit } from '../../src/core/kit.js';
 import { generateItem } from '../../src/core/item.js';
 import { disposeObject, groupParts, mergeByMaterial } from '../../src/core/merge.js';
+import { hexToHsl } from '../../src/core/palette.js';
 import * as registry from '../../src/furniture/registry.js';
 import { geometryStats } from '../helpers/geometry-stats.js';
 import { checkInvariants } from '../helpers/invariants.js';
@@ -163,4 +164,18 @@ test('build is pure and releases its textures', () => {
     assert.equal(geometryStats(object).checksum, a.checksum);
     disposeObject(object);
   }
+});
+
+test('floral spacing shrinks on small seats and dark cushions never get a darker pattern colour', () => {
+  let florals = 0;
+  for (let n = 1; n <= 800; n++) {
+    const p = params(n);
+    if (p.pattern !== 'none' && p.pattern.kind === 'floral') {
+      florals++;
+      assert.ok(p.pattern.spacing <= 0.14 * Math.min(1, Math.max(0.6, p.seatWidth / 0.55)) + 1e-9, `#${n}`);
+    }
+    const base = hexToHsl(p.cushionColor);
+    if (base.l < 0.42) assert.ok(hexToHsl(p.cushionSecondary).l > base.l - 0.05, `#${n}`);
+  }
+  assert.ok(florals > 10);
 });

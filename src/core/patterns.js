@@ -55,13 +55,18 @@ float patFill(float d, float aw) {
 float patFade(float aw, float lo, float hi) {
   return 1.0 - smoothstep(lo, hi, aw);
 }
+float patFootprint(vec3 dx, vec3 dy) {
+  float a = length(dx);
+  float b = length(dy);
+  return max(sqrt(a * b), 0.25 * max(a, b));
+}
 `;
 
 const GLSL_TRIPLANAR = `
   vec3 patDx = dFdx(vPatPos);
   vec3 patDy = dFdy(vPatPos);
-  float patPx = 0.5 * (length(patDx) + length(patDy));
-  vec3 patN = abs(cross(patDx, patDy));
+  float patPx = patFootprint(patDx, patDy);
+  vec3 patN = abs(normalize(cross(patDx, patDy))) * vec3(1.0, 1.3, 1.19);
   vec2 patUv = patN.x > patN.y && patN.x > patN.z ? vPatPos.zy : patN.y > patN.z ? vPatPos.xz : vPatPos.xy;
   diffuseColor.rgb = patPlane(patUv, patPx);
 `;
@@ -76,10 +81,13 @@ vec3 patWood(vec3 pos, vec3 g, float px) {
   vec3 v = cross(a, u);
   float along = dot(pos, a);
   vec2 q = vec2(dot(pos, u), dot(pos, v));
-  vec2 centre = vec2(0.45, -0.7) + (vec2(uPatSeed, fract(uPatSeed * 7.13)) - 0.5) * 0.6;
+  vec2 centre = vec2(0.12, -0.3) + (vec2(uPatSeed, fract(uPatSeed * 7.13)) - 0.5) * 0.3;
+  vec2 tilt = vec2(0.08, 0.05) + (vec2(fract(uPatSeed * 3.71), fract(uPatSeed * 5.37)) - 0.5) * 0.06;
   float spacing = uPatP.x;
   float warp = patNoise3(vec3(along * 2.2, q * 7.0) + uPatSeed * 13.0) - 0.5;
-  float r = length(q - centre) + warp * spacing * (1.0 + 5.0 * uPatP.z);
+  float sweep = patNoise3(vec3(along * 0.9, q * 1.6) + uPatSeed * 29.0) - 0.5;
+  float r = length(q - centre - along * tilt) + warp * spacing * (1.0 + 5.0 * uPatP.z) + sweep * spacing * (1.5 + 5.0 * uPatP.z);
+  r += spacing * 1.7 * (patNoise3(vec3(r / spacing * 0.17, along * 0.5, uPatSeed * 41.0)) - 0.5);
   float ft = fract(r / spacing);
   float aw = px / spacing;
   float band = smoothstep(0.45, 0.8, ft) * (1.0 - smoothstep(0.86, 1.0, ft));
@@ -87,10 +95,15 @@ vec3 patWood(vec3 pos, vec3 g, float px) {
   float fib = patNoise3(vec3(along * 18.0, q * 650.0) + uPatSeed * 50.0);
   float fibFade = patFade(px * 650.0, 0.35, 0.9);
   float tone = patNoise3(vec3(along * 1.1, q * 2.5) + uPatSeed * 3.0);
-  vec3 col = mix(uPatA, uPatC, smoothstep(0.35, 0.85, tone) * 0.8);
-  col = mix(col, uPatB, band * 0.7);
+  float k = mix(1.6, 1.0, smoothstep(0.03, 0.2, dot(uPatA, vec3(0.2126, 0.7152, 0.0722))));
+  vec3 late = max(uPatA + (uPatB - uPatA) * k, vec3(0.0));
+  vec3 light = uPatA + (uPatC - uPatA) * k;
+  vec3 col = mix(uPatA, light, smoothstep(0.35, 0.85, tone) * 0.8);
+  col = mix(col, late, band * 0.7);
+  float zone = smoothstep(0.45, 0.75, patNoise3(vec3(r / (spacing * 4.0), along * 0.4, uPatSeed * 17.0)));
+  col = mix(col, late, zone * 0.4 * patFade(px / (spacing * 4.0), 0.25, 0.6));
   float f = (fib - 0.5) * uPatP.y * fibFade;
-  col = f > 0.0 ? mix(col, uPatC, f * 0.7) : mix(col, uPatB, -f * 0.9);
+  col = f > 0.0 ? mix(col, light, f * 0.7) : mix(col, late, -f * 0.9);
   return col;
 }
 `,
@@ -219,15 +232,20 @@ vec3 patPlane(vec2 p, float px) {
   vec2 c = p / t + uPatSeed * vec2(17.0, 31.0);
   float aw = px / t;
   float tone;
+  float fade;
   if (uPatP.z > 0.5) {
-    float n = patNoise2(c * 0.7) * 0.6 + patNoise2(c * 1.9 + 7.0) * 0.4;
-    tone = smoothstep(0.3, 0.75, n);
+    vec2 b = c * 1.4;
+    float n = patNoise2(b) * 0.6 + patNoise2(b * 2.1 + 7.0) * 0.4;
+    tone = smoothstep(0.2, 0.8, n);
+    fade = patFade(aw * 1.4, 0.35, 0.8);
   } else {
-    float warp = patNoise2(vec2(c.x * 0.08, floor(c.y) * 1.7));
-    float weft = patNoise2(vec2(floor(c.x) * 1.7 + 5.0, c.y * 0.08));
-    tone = smoothstep(0.15, 0.85, mix(warp, weft, 0.45));
+    float warp = patNoise2(vec2(c.x * 0.3, floor(c.y) * 1.7));
+    float weft = patNoise2(vec2(floor(c.x) * 1.7 + 5.0, c.y * 0.3));
+    float slub = patNoise2(c * 0.05 + 11.0);
+    tone = mix(0.5, mix(warp, weft, 0.5), 0.75 + 0.25 * slub);
+    fade = patFade(aw, 0.4, 0.9);
   }
-  tone = (mix(0.5, tone, patFade(aw, 0.4, 0.9)) - 0.5) * 2.0 * uPatP.y;
+  tone = (mix(0.5, tone, fade) - 0.5) * 1.4 * uPatP.y;
   return tone > 0.0 ? mix(uPatA, uPatB, tone) : mix(uPatA, uPatC, -tone);
 }
 `,
@@ -282,8 +300,8 @@ export const PATTERN_KINDS_SPEC = {
     params: (s) => [s.size, s.density, 0, 0],
   },
   linen: {
-    colors: ([a, b, c]) => [a, b ?? derive(a, -0.07), c ?? derive(a, 0.05)],
-    fields: { thread: len(0.004, 0.001, 0.02), strength: num(0.6, 0, 1), texture: oneOf('linen', 'boucle') },
+    colors: ([a, b, c]) => [a, b ?? derive(a, -0.045), c ?? derive(a, 0.035)],
+    fields: { thread: len(0.004, 0.001, 0.02), strength: num(0.4, 0, 1), texture: oneOf('linen', 'boucle') },
     params: (s) => [s.thread, s.strength, s.texture === 'boucle' ? 1 : 0, 0],
   },
 };
@@ -345,7 +363,7 @@ export function injectPattern(shader, kind, uniforms) {
     .replace('#include <common>', `#include <common>\nvarying vec3 vPatPos;\n${grain ? 'attribute vec3 grain;\nvarying vec3 vPatGrain;\n' : ''}`)
     .replace('#include <begin_vertex>', `#include <begin_vertex>\nvPatPos = transformed;\n${grain ? 'vPatGrain = grain;\n' : ''}`);
   const body = grain
-    ? `  float patPx = 0.5 * (length(dFdx(vPatPos)) + length(dFdy(vPatPos)));\n  diffuseColor.rgb = patWood(vPatPos, vPatGrain, patPx);\n`
+    ? `  float patPx = patFootprint(dFdx(vPatPos), dFdy(vPatPos));\n  diffuseColor.rgb = patWood(vPatPos, vPatGrain, patPx);\n`
     : GLSL_TRIPLANAR;
   shader.fragmentShader = shader.fragmentShader
     .replace('#include <common>', `#include <common>\n${GLSL_COMMON}\n${GLSL_KINDS[kind]}`)
