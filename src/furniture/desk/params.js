@@ -1,5 +1,5 @@
 import { FRAME_COLORS, hsl, pickLeather, pickWood } from '../../core/color.js';
-import { PAINTS, capSaturation, harmoniousSecondary, paintColor, swatch } from '../../core/palette.js';
+import { PAINTS, capSaturation, harmoniousSecondary, paintColor, shade, swatch } from '../../core/palette.js';
 import { rollStyle, weightedPick } from '../../core/rng.js';
 import { clamp, lerp } from '../../core/math.js';
 import {
@@ -13,7 +13,7 @@ const at = (u) => ({ next: () => u });
 const pickU = (u, weights) => weightedPick(at(u), weights);
 const mm = (v) => Math.round(v * 1000) / 1000;
 
-const WIDTH = { writing: [0.9, 1.3], pedestal: [1.1, 1.8], trestle: [1.2, 1.8], standing: [1.0, 1.6], panel: [1.0, 1.6] };
+const WIDTH = { writing: [0.9, 1.3], pedestal: [1.4, 1.8], trestle: [1.2, 1.8], standing: [1.0, 1.6], panel: [1.0, 1.6] };
 const DEPTH = { writing: [0.5, 0.65], pedestal: [0.65, 0.8], trestle: [0.62, 0.75], standing: [0.6, 0.8], panel: [0.55, 0.75] };
 const THICKNESS = { writing: [0.018, 0.028], pedestal: [0.025, 0.04], trestle: [0.035, 0.05], standing: [0.022, 0.03], panel: [0.03, 0.05] };
 const ADDON_WEIGHTS = {
@@ -38,8 +38,10 @@ function generateTop(g, style) {
     const topAddon = pickU(uAdd, ADDON_WEIGHTS[style]);
     const addonHeight = topAddon === 'rail' ? lerp([0.04, 0.08], uAH) : topAddon === 'riser' ? lerp([0.09, 0.15], uAH) : 0;
     const addonDepth = topAddon === 'rail' ? lerp([0.018, 0.022], uAD) : topAddon === 'riser' ? Math.min(lerp([0.2, 0.26], uAD), 0.4 * topDepth) : 0;
-    const inlay = uInlay < (INLAY_CHANCE[style] ?? 0);
-    const inlayInset = inlay ? lerp([0.04, 0.08], uInset) : 0;
+    const inlayInset0 = lerp([0.04, 0.08], uInset);
+    const inlayDepth = topDepth - 2 * inlayInset0 - (topAddon === 'none' ? 0 : addonDepth + 0.02);
+    const inlay = uInlay < (INLAY_CHANCE[style] ?? 0) && inlayDepth >= 0.25;
+    const inlayInset = inlay ? inlayInset0 : 0;
     return {
       heightMode, topWidth, topDepth, topHeight, topThickness, topEdge, topExponent, topAddon, addonHeight, addonDepth,
       inlay, inlayInset, clutter: uClutter < 0.4,
@@ -50,7 +52,7 @@ function generateTop(g, style) {
 const BASE_DRAWS = [
   'layout', 'side', 'pw', 'ph', 'pd', 'po', 'poFlush', 'base', 'baseH', 'ct', 'end', 'modesty', 'modestyH', 'profile', 'legT', 'sides',
   'taper', 'splay', 'overhang', 'apronH', 'apronT', 'stretch', 'stretchH', 'stretchT', 'tKind', 'tInset', 'foot', 'footH', 'beam',
-  'post', 'cleat', 'tStretch', 'backRail', 'fInset', 'colW', 'colD', 'stages', 'colZ', 'ffH', 'ffW', 'barH', 'control', 'panelT',
+  'post', 'cleat', 'tStretch', 'backRail', 'railH', 'fInset', 'colW', 'colD', 'stages', 'colZ', 'ffH', 'ffW', 'barH', 'control', 'panelT',
   'waterfall', 'panelInset', 'panelDepth', 'panelCut', 'panelCutH',
 ];
 
@@ -59,14 +61,14 @@ const NEUTRAL_BASE = {
   pedestalOverhang: 0, pedestalBase: 'none', pedestalBaseHeight: 0, endSupport: 'none', modestyPanel: false, modestyHeight: 0,
   legCount: 0, legProfile: 'straight', legThickness: 0, legSides: 0, legTaper: 1, legSplay: 0, overhang: 0, apronHeight: 0,
   stretcher: 'none', stretcherHeight: 0, stretcherThickness: 0, trestleKind: 'none', trestleInset: 0, footLength: 0, footHeight: 0,
-  beamWidth: 0, postDepth: 0, cleatHeight: 0, trestleStretcherHeight: 0, trestleBackRail: false, frameInset: 0, columnWidth: 0,
+  beamWidth: 0, postDepth: 0, cleatHeight: 0, trestleStretcherHeight: 0, trestleBackRail: false, trestleRailHeight: 0, frameInset: 0, columnWidth: 0,
   columnDepth: 0, columnStages: 0, columnZ: 0, frameFootLength: 0, frameFootHeight: 0, frameFootWidth: 0, crossbarHeight: 0,
   controlBox: false, waterfall: false, panelThickness: 0, panelInset: 0, panelDepth: 0, panelCut: 'none', panelCutHeight: 0,
 };
 
 function legFields(u, weights, thicknessRange, overhang, legHeight) {
   const legProfile = pickU(u.profile, weights);
-  const legThickness = lerp(thicknessRange, u.legT);
+  const legThickness = legProfile === 'turned' ? lerp([0.05, 0.06], u.legT) : lerp(thicknessRange, u.legT);
   const legSides = legProfile === 'turned' ? 8 : pickU(u.sides, [[4, 0.55], [6, 0.2], [8, 0.25]]);
   const legTaper = legProfile === 'tapered' ? lerp([0.5, 0.75], u.taper) : legProfile === 'splayed' ? lerp([0.55, 0.8], u.taper) : 1;
   let legSplay = 0;
@@ -152,12 +154,14 @@ function trestleBase(u, t, L) {
     postDepth: trestleKind === 'I' ? lerp([0.1, 0.16], u.post) : beamWidth,
     footLength: D * lerp([0.8, 0.92], u.foot), footHeight: lerp([0.05, 0.08], u.footH), cleatHeight: lerp([0.04, 0.06], u.cleat),
     trestleStretcherHeight: trestleKind === 'X' ? 0 : Math.min(lerp([0.1, 0.2], u.tStretch), 0.215 - beamWidth / 2),
-    trestleBackRail: u.backRail < 0.5,
   };
   const room = 2 * fi - KNEE_MIN;
-  if (u.layout >= 0.35 || room < 0.3) return out;
+  const boxed = u.layout < 0.6 && room >= 0.3;
+  const trestleBackRail = boxed ? u.backRail < 0.5 : true;
+  const trestleRailHeight = lerp(boxed ? [0.14, 0.24] : [0.2, 0.3], u.railH);
+  if (!boxed) return { ...out, trestleBackRail, trestleRailHeight };
   return {
-    ...out, pedestalLayout: 'box', pedestalSide: pickU(u.side, { left: 0.4, right: 0.6 }), pedestalWidth: Math.min(lerp([0.34, 0.48], u.pw), room),
+    ...out, trestleBackRail, trestleRailHeight, pedestalLayout: 'box', pedestalSide: pickU(u.side, { left: 0.4, right: 0.6 }), pedestalWidth: Math.min(lerp([0.34, 0.48], u.pw), room),
     pedestalHeight: lerp([0.1, 0.14], u.ph), pedestalDepth: Math.min(lerp([0.85, 0.92], u.pd) * D, D - 2 * PEDESTAL_SETBACK),
   };
 }
@@ -223,10 +227,10 @@ function generateBase(g, style, t) {
 const CONSTRUCTION = { writing: { overlay: 0.6, inset: 0.4 }, pedestal: { overlay: 0.55, inset: 0.45 }, trestle: { overlay: 0.75, inset: 0.25 }, panel: { overlay: 0.75, inset: 0.25 } };
 const DRAWER_STYLE = { writing: { slab: 0.85, framed: 0.15 }, pedestal: { slab: 0.55, framed: 0.45 }, trestle: { slab: 1, framed: 0 }, panel: { slab: 1, framed: 0 } };
 const HANDLE_WEIGHTS = {
-  writing: { knob: 0.4, bar: 0.1, tab: 0, cup: 0.05, ring: 0.2, groove: 0.25 },
-  pedestal: { knob: 0.2, bar: 0.35, tab: 0.1, cup: 0.15, ring: 0.05, groove: 0.15 },
-  trestle: { knob: 0.35, bar: 0.3, tab: 0.15, cup: 0, ring: 0, groove: 0.2 },
-  panel: { knob: 0.35, bar: 0.3, tab: 0.15, cup: 0, ring: 0, groove: 0.2 },
+  writing: { knob: 0.4, bar: 0.2, tab: 0, cup: 0.1, ring: 0.3, groove: 0 },
+  pedestal: { knob: 0.25, bar: 0.4, tab: 0.1, cup: 0.17, ring: 0.05, groove: 0.03 },
+  trestle: { knob: 0.5, bar: 0.4, tab: 0, cup: 0.1, ring: 0, groove: 0 },
+  panel: { knob: 0.5, bar: 0.4, tab: 0, cup: 0.1, ring: 0, groove: 0 },
 };
 
 const NEUTRAL_FRONTS = {
@@ -250,7 +254,7 @@ function generateFronts(g, style, t, b) {
     const L = b.legHeight;
     let apronDrawers = 0;
     if (style === 'writing') {
-      apronDrawers = pickU(uApron, [[0, 0.12], [1, 0.38], [2, 0.25], [3, 0.25]]);
+      apronDrawers = pickU(uApron, [[1, 0.42], [2, 0.29], [3, 0.29]]);
       const width = 2 * legPlan(p0).inner;
       if (apronDrawers === 3 && (width - 0.012) / 3 < 0.22) apronDrawers = 2;
     }
@@ -267,7 +271,8 @@ function generateFronts(g, style, t, b) {
     const centreDrawerHeight = centreDrawer ? Math.min(lerp([0.06, 0.09], uCentreH), L - 0.61) : 0;
     const construction = pickU(uCons, CONSTRUCTION[style]);
     let drawerStyle = pickU(uDrawer, DRAWER_STYLE[style]);
-    const handleKind = pickU(uKind, HANDLE_WEIGHTS[style]);
+    let handleKind = pickU(uKind, HANDLE_WEIGHTS[style]);
+    if (handleKind === 'tab' && (b.pedestalLayout === 'hung' || b.pedestalLayout === 'box')) handleKind = 'knob';
     if (b.pedestalLayout === 'double' && drawerStyle === 'framed' && handleKind === 'bar' && stackLayout === 'graduated4') stackLayout = 'three';
     const out = {
       apronDrawers, stackLayout, mirrorStack, hungDrawers, centreDrawer, centreDrawerHeight, construction, drawerStyle,
@@ -281,7 +286,12 @@ function generateFronts(g, style, t, b) {
 }
 
 function generatePalette(g) {
-  return g.roll('palette', (r) => ({ paint: paintColor(r).hex, inlayColor: pickLeather(r).hex }));
+  return g.roll('palette', (r) => {
+    const paint = paintColor(r);
+    const leather = pickLeather(r).hex;
+    const cool = paint.h > 0.45 && paint.h < 0.95;
+    return { paint: paint.hex, inlayColor: cool ? shade(paint, -0.3, 0.6).hex : leather };
+  });
 }
 
 const TOP_FINISH = {
@@ -298,8 +308,8 @@ function bodyWeights(p) {
 }
 
 const HARDWARE_WEIGHTS = {
-  soft: { match: 0.3, black: 0.25, brass: 0.3, metal: 0.15 },
-  hard: { match: 0.1, black: 0.35, brass: 0.25, metal: 0.3 },
+  soft: { match: 0.12, black: 0.3, brass: 0.35, metal: 0.23 },
+  hard: { match: 0.04, black: 0.37, brass: 0.27, metal: 0.32 },
 };
 
 const lightness = (hex) => swatch(hex).l;

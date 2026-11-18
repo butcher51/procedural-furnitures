@@ -10,7 +10,7 @@ import {
   buildApron, buildFeet, buildLegs, buildStretchers, buildTrestle, legLines, pointOnLeg, turnedPost,
 } from '../../core/supports.js';
 import {
-  POST_WIDTH, SHELF_THICKNESS, clearSpan, columnStages, columnX, floorPedestals, frontRegions, inlayRect, kneeSpan, legPlan,
+  POST_WIDTH, SHELF_THICKNESS, clearSpan, columnStages, columnX, floorPedestals, frameX, frontRegions, inlayRect, kneeSpan, legPlan,
   panelInner, propPlan, riserWidth, sideSign, wingLength,
 } from './layout.js';
 
@@ -198,8 +198,9 @@ function cleatLengthFor(p) {
 }
 
 function buildTrestleDesk(p, mats) {
-  return [buildTrestle({
-    cleatLength: cleatLengthFor(p),
+  const cleatLength = cleatLengthFor(p);
+  const frame = buildTrestle({
+    cleatLength,
     length: p.topWidth,
     depth: p.topDepth,
     top: p.legHeight,
@@ -212,8 +213,13 @@ function buildTrestleDesk(p, mats) {
     cleatHeight: p.cleatHeight,
     stretcherHeight: p.trestleStretcherHeight,
     stretcher: p.trestleKind !== 'X',
-    backRail: p.trestleBackRail,
-  }, mats.body)];
+    backRail: false,
+  }, mats.body);
+  if (!p.trestleBackRail) return [frame];
+  const fx = frameX(p);
+  const zr = -cleatLength / 2 + 0.01;
+  const y = p.legHeight - p.trestleRailHeight / 2;
+  return [frame, bodyBeam(v3(-fx, y, zr), v3(fx, y, zr), 0.02, p.trestleRailHeight, mats.body)];
 }
 
 function buildPanelDesk(p, mats) {

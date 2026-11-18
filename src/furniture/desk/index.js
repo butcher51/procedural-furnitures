@@ -110,7 +110,7 @@ export default {
         'pedestalBase', 'pedestalBaseHeight', 'carcassThickness', 'endSupport', 'modestyPanel', 'modestyHeight', 'legCount',
         'legProfile', 'legThickness', 'legSides', 'legTaper', 'legSplay', 'overhang', 'legHeight', 'apronHeight', 'apronThickness',
         'stretcher', 'stretcherHeight', 'stretcherThickness', 'trestleKind', 'trestleInset', 'footLength', 'footHeight', 'beamWidth',
-        'postDepth', 'cleatHeight', 'trestleStretcherHeight', 'trestleBackRail', 'frameInset', 'columnWidth', 'columnDepth',
+        'postDepth', 'cleatHeight', 'trestleStretcherHeight', 'trestleBackRail', 'trestleRailHeight', 'frameInset', 'columnWidth', 'columnDepth',
         'columnStages', 'columnZ', 'frameFootLength', 'frameFootHeight', 'frameFootWidth', 'crossbarHeight', 'controlBox', 'waterfall',
         'panelThickness', 'panelInset', 'panelDepth', 'panelCut', 'panelCutHeight', 'kneeWidth', 'kneeCenterX',
       ],

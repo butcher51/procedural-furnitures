@@ -37,7 +37,7 @@ test('style distribution is within 4 pp of the weights', () => {
 });
 
 test('top, base and support params respect the spec ranges', () => {
-  const widths = { writing: [0.9, 1.3], pedestal: [1.1, 1.8], trestle: [1.2, 1.8], standing: [1.0, 1.6], panel: [1.0, 1.6] };
+  const widths = { writing: [0.9, 1.3], pedestal: [1.4, 1.8], trestle: [1.2, 1.8], standing: [1.0, 1.6], panel: [1.0, 1.6] };
   const depths = { writing: [0.5, 0.65], pedestal: [0.65, 0.8], trestle: [0.62, 0.75], standing: [0.6, 0.8], panel: [0.55, 0.75] };
   const thick = { writing: [0.018, 0.028], pedestal: [0.025, 0.04], trestle: [0.035, 0.05], standing: [0.022, 0.03], panel: [0.03, 0.05] };
   for (const p of all) {
