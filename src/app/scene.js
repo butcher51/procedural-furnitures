@@ -1,21 +1,28 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+const EASE_MS = 300;
+
+const cssColor = (name, fallback) =>
+  getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+
 export function createStage(viewport) {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
+  renderer.shadowMap.autoUpdate = false;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   viewport.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#f5f3ef');
+  scene.background = new THREE.Color(cssColor('--bg', '#f5f3ef'));
 
   const camera = new THREE.PerspectiveCamera(38, 1, 0.05, 100);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.minDistance = 0.8;
   controls.maxPolarAngle = Math.PI * 0.49;
+  controls.autoRotateSpeed = 2.5;
 
   scene.add(new THREE.HemisphereLight('#ffffff', '#d9d2c5', 1.4));
   const sun = new THREE.DirectionalLight('#ffffff', 2.2);
@@ -26,14 +33,24 @@ export function createStage(viewport) {
 
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(1, 1),
-    new THREE.MeshStandardMaterial({ color: '#ece8e1', roughness: 1 })
+    new THREE.MeshStandardMaterial({ color: cssColor('--ground', '#ece8e1'), roughness: 1 })
   );
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   scene.add(ground);
 
   let floorGrid = null;
+  let dirty = true;
+  let shadowDirty = true;
+  let tween = null;
+  let inset = 0;
+  let animateMoves = true;
   const overview = { position: new THREE.Vector3(), target: new THREE.Vector3() };
+
+  const invalidate = ({ shadow = false } = {}) => {
+    dirty = true;
+    if (shadow) shadowDirty = true;
+  };
 
   function layout({ gridSize, spacing, single }) {
     const size = single ? 1 : gridSize;
@@ -68,28 +85,114 @@ export function createStage(viewport) {
       overview.position.set(extent * 1.25, extent * 1.2, extent * 1.7);
       overview.target.set(0, 0.3, 0);
     }
-    resetCamera();
+    tween = null;
+    camera.position.copy(overview.position);
+    controls.target.copy(overview.target);
+    invalidate({ shadow: true });
+  }
+
+  function moveTo(position, target) {
+    if (!animateMoves) {
+      tween = null;
+      camera.position.copy(position);
+      controls.target.copy(target);
+      invalidate();
+      return;
+    }
+    tween = {
+      start: performance.now(),
+      fromPosition: camera.position.clone(),
+      fromTarget: controls.target.clone(),
+      position: position.clone(),
+      target: target.clone(),
+    };
+    invalidate();
   }
 
   function resetCamera() {
-    camera.position.copy(overview.position);
-    controls.target.copy(overview.target);
+    moveTo(overview.position, overview.target);
   }
 
   function focus(position, distance) {
     const viewDir = camera.position.clone().sub(controls.target).setLength(distance);
-    controls.target.set(position.x, 0.4, position.z);
-    camera.position.copy(controls.target).add(viewDir);
+    const target = new THREE.Vector3(position.x, 0.4, position.z);
+    moveTo(target.clone().add(viewDir), target);
+  }
+
+  function applyViewOffset() {
+    const { clientWidth: w, clientHeight: h } = viewport;
+    if (inset > 0 && w > 0) camera.setViewOffset(w, h, 0, inset / 2, w, h);
+    else camera.clearViewOffset();
+    camera.updateProjectionMatrix();
+  }
+
+  function setInset(px) {
+    inset = px;
+    applyViewOffset();
+    invalidate();
   }
 
   function resize() {
     const { clientWidth: w, clientHeight: h } = viewport;
+    if (!w || !h) return;
     renderer.setSize(w, h);
     camera.aspect = w / h;
-    camera.updateProjectionMatrix();
+    applyViewOffset();
+    invalidate();
   }
-  window.addEventListener('resize', resize);
+  new ResizeObserver(resize).observe(viewport);
   resize();
 
-  return { renderer, scene, camera, controls, layout, resetCamera, focus };
+  controls.addEventListener('start', () => (tween = null));
+
+  function frame(now, animating = false) {
+    let active = dirty || animating;
+    if (tween) {
+      const t = Math.min((now - tween.start) / EASE_MS, 1);
+      const k = 1 - (1 - t) ** 3;
+      camera.position.lerpVectors(tween.fromPosition, tween.position, k);
+      controls.target.lerpVectors(tween.fromTarget, tween.target, k);
+      if (t === 1) tween = null;
+      active = true;
+    }
+    if (controls.update()) active = true;
+    if (!active) return false;
+    if (animating || shadowDirty) {
+      renderer.shadowMap.needsUpdate = true;
+      shadowDirty = false;
+    }
+    renderer.render(scene, camera);
+    dirty = false;
+    return true;
+  }
+
+  function renderNow() {
+    renderer.render(scene, camera);
+    dirty = true;
+  }
+
+  return {
+    renderer,
+    scene,
+    camera,
+    controls,
+    layout,
+    resetCamera,
+    focus,
+    setInset,
+    resize,
+    frame,
+    renderNow,
+    invalidate,
+    setAnimateMoves(value) {
+      animateMoves = value;
+    },
+    setTurntable(on) {
+      controls.autoRotate = on;
+      invalidate();
+    },
+    get turntable() {
+      return controls.autoRotate;
+    },
+  };
 }
