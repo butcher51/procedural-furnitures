@@ -1,4 +1,4 @@
-import { solveFronts } from '../../core/fronts.js';
+import { carcassField, solveFronts } from '../../core/fronts.js';
 
 const drawers = (count, extra = {}) => ({ leaf: 'drawers', count, ...extra });
 
@@ -80,19 +80,6 @@ export function boxCentreX(p) {
   return (s > 0 ? x1 : x0) + s * (0.002 - p.pedestalWidth / 2);
 }
 
-export function carcassField({ width, y0, y1, depth, panel, construction, edge = 0.002, x = 0 }) {
-  if (construction === 'inset') {
-    const inner = width / 2 - panel;
-    return { x0: x - inner, x1: x + inner, y0: y0 + panel, y1, z: depth / 2 };
-  }
-  return { x0: x - width / 2 + edge, x1: x + width / 2 - edge, y0: y0 + edge, y1: y1 - edge, z: depth / 2 };
-}
-
-export function carcassOpening({ width, y0, y1, panel, x = 0 }) {
-  const inner = width / 2 - panel;
-  return { x0: x - inner, x1: x + inner, y0: y0 + panel, y1 };
-}
-
 function baseOpts(p) {
   return {
     construction: p.construction,
@@ -130,12 +117,14 @@ export function frontRegions(p) {
   floorPedestals(p).forEach((ped) => {
     const spec = carcassSpec(p, 'floor', ped.x);
     const plan = STACK_PLANS[stackOf(p, ped.side < 0 ? 0 : 1)](ped.name);
-    add(`pedestal-${ped.name}`, plan, carcassField(spec), PEDESTAL_OPTS, { carcass: spec, opening: carcassOpening(spec), backers: true, members: true });
+    const { field, opening } = carcassField(spec);
+    add(`pedestal-${ped.name}`, plan, field, PEDESTAL_OPTS, { carcass: spec, opening, backers: true, members: true });
   });
   if (p.pedestalLayout === 'hung' || p.pedestalLayout === 'box') {
     const spec = carcassSpec(p, 'box', boxCentreX(p));
     const count = p.pedestalLayout === 'hung' ? p.hungDrawers : 1;
-    add('box', { leaf: 'drawers', count }, carcassField(spec), BOX_OPTS, { carcass: spec, opening: carcassOpening(spec), backers: true, members: true });
+    const { field, opening } = carcassField(spec);
+    add('box', { leaf: 'drawers', count }, field, BOX_OPTS, { carcass: spec, opening, backers: true, members: true });
   }
   if (p.centreDrawer) {
     const [x0, x1] = clearSpan(p);

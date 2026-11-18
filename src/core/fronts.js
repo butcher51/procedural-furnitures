@@ -461,8 +461,62 @@ function drawerSlotY(front, hw, extent) {
   return Math.min(front.y1 - INSIDE - half, Math.max(front.y0 + INSIDE + half, y));
 }
 
-export function handleSlots(front, handle) {
+export const PANEL_SETBACK = 0.006;
+
+export function panelFrameWidth(front, frameWidth) {
+  return Math.max(0.01, Math.min(frameWidth, 0.2 * Math.min(front.x1 - front.x0, front.y1 - front.y0)));
+}
+
+export function handleContact(slot, handle) {
   const hw = normalizeHandle(handle);
+  let u, v0, v1;
+  if (slot.kind === 'knob') {
+    u = 0.28 * slot.length;
+    v0 = -u;
+    v1 = u;
+  } else if (slot.kind === 'bar') {
+    const r = (slot.size ?? hw.barDiameter) / 2;
+    u = slot.length / 2 - 0.2 * r;
+    v0 = -0.8 * r;
+    v1 = 0.8 * r;
+  } else if (slot.kind === 'tab') {
+    const length = slot.size ?? hw.tabLength;
+    u = slot.length / 2;
+    v0 = 0.1 * length - 0.004;
+    v1 = length / 2;
+  } else if (slot.kind === 'ring') {
+    const rosette = 0.22 * slot.length;
+    const top = (slot.length * RING_DROP) / 2;
+    u = rosette;
+    v0 = top - 2 * rosette;
+    v1 = top;
+  } else {
+    u = slot.length / 2;
+    v0 = -(slot.size ?? 0) / 2;
+    v1 = (slot.size ?? 0) / 2;
+  }
+  if (slot.axis === 'y' && (slot.kind === 'bar' || slot.kind === 'lip')) {
+    return { x0: slot.x - v1, x1: slot.x - v0, y0: slot.y - u, y1: slot.y + u };
+  }
+  return { x0: slot.x - u, x1: slot.x + u, y0: slot.y + v0, y1: slot.y + v1 };
+}
+
+export function seatHandle(slot, front, handle, surface = null) {
+  const style = surface?.style ?? 'slab';
+  if (style === 'slab' || !HANDLE_KINDS[slot.kind]?.part) return { ...slot, z: front.z1 };
+  const fw = panelFrameWidth(front, surface.frameWidth ?? 0.05);
+  const c = handleContact(slot, handle);
+  const e = 1e-9;
+  const onPanel = c.x0 >= front.x0 + fw - e && c.x1 <= front.x1 - fw + e && c.y0 >= front.y0 + fw - e && c.y1 <= front.y1 - fw + e;
+  return { ...slot, z: onPanel ? front.z1 - PANEL_SETBACK : front.z1 };
+}
+
+export function handleSlots(front, handle, surface = null) {
+  const hw = normalizeHandle(handle);
+  return placeSlots(front, hw).map((slot) => seatHandle(slot, front, hw, surface));
+}
+
+function placeSlots(front, hw) {
   const isDoor = front.kind === 'door';
   let kind = isDoor ? hw.doorKind ?? DOOR_KIND[hw.kind] ?? hw.kind : hw.kind;
   if (kind === 'none') return [];
@@ -535,16 +589,17 @@ export function handleSlots(front, handle) {
 
 export const HANDLE_BUDGET = 2200;
 
-export function planHandles(layout, handle) {
+export function planHandles(layout, handle, surfaceOf = null) {
   const hw = normalizeHandle(handle);
-  const perFront = layout.fronts.map((front) => handleSlots(front, hw));
+  const surfaces = layout.fronts.map((front, i) => (surfaceOf ? surfaceOf(front, i) : null));
+  const perFront = layout.fronts.map((front, i) => handleSlots(front, hw, surfaces[i]));
   const tris = (slots) => slots.reduce((sum, slot) => sum + handleTris(slot.kind, hw), 0);
   let total = perFront.reduce((sum, slots) => sum + tris(slots), 0);
   const slots = perFront.map((list, i) => {
     const front = layout.fronts[i];
     if (total <= HANDLE_BUDGET || list.length < 2 || front.kind === 'door') return list;
     total -= tris(list.slice(1));
-    return [{ ...list[0], x: (front.x0 + front.x1) / 2 }];
+    return [seatHandle({ ...list[0], x: (front.x0 + front.x1) / 2 }, front, hw, surfaces[i])];
   });
   return slots.flatMap((list, i) => list.map((slot) => ({ ...slot, front: i })));
 }
@@ -612,7 +667,7 @@ export function frontPanel(front, { thickness, bevel = 0.003, style = 'slab', fr
     group.add(grainAlong(mesh, front.grain ?? 'x'));
     return group;
   }
-  const fw = Math.max(0.01, Math.min(frameWidth, 0.2 * Math.min(w, h)));
+  const fw = panelFrameWidth(f, frameWidth);
   const radius = Math.min(b, fw * 0.2);
   const stile = (x) => group.add(beam(new THREE.Vector3(x, f.y0, zc), new THREE.Vector3(x, f.y1, zc), fw, thickness, radius, mats.front));
   const rail = (y) => group.add(beam(new THREE.Vector3(f.x0 + fw, y, zc), new THREE.Vector3(f.x1 - fw, y, zc), thickness, fw, radius, mats.front));
@@ -624,7 +679,7 @@ export function frontPanel(front, { thickness, bevel = 0.003, style = 'slab', fr
   const overlap = Math.min(0.004, fw * 0.4);
   const panelMat = style === 'insert' ? mats.insert ?? mats.front : mats.front;
   const panel = new THREE.Mesh(extrudeProfile(rectOutline(w - 2 * fw + 2 * overlap, h - 2 * fw + 2 * overlap), panelT, Math.min(0.0015, panelT * 0.3), 'front'), panelMat);
-  panel.position.set(cx, cy, front.z1 - 0.006 - panelT / 2);
+  panel.position.set(cx, cy, front.z1 - PANEL_SETBACK - panelT / 2);
   group.add(grainAlong(panel, front.grain ?? 'x'));
   return group;
 }
@@ -653,11 +708,17 @@ export function buildCarcass({ width, depth, y0, y1, panel, back = 0.01, sides =
     const zb = (zFront + zBack + backT) / 2;
     parts.push(beam(v3(x - inner, y0 + panel / 2, zb), v3(x + inner, y0 + panel / 2, zb), carcassDepth - backT, panel, radius, mat));
   }
+  const { field, opening } = carcassField({ width, depth, y0, y1, panel, sides, bottom, construction, edge, x });
+  return { parts, field, opening, innerDepth: depth - backT };
+}
+
+export function carcassField({ width, depth, y0, y1, panel, sides = true, bottom = true, construction = 'overlay', edge = 0.002, x = 0 }) {
+  const inner = width / 2 - (sides ? panel : 0);
   const opening = { x0: x - inner, x1: x + inner, y0: y0 + (bottom ? panel : 0), y1 };
-  const field = inset
+  const field = construction === 'inset'
     ? { ...opening, z: depth / 2 }
     : { x0: x - width / 2 + edge, x1: x + width / 2 - edge, y0: y0 + edge, y1: y1 - edge, z: depth / 2 };
-  return { parts, field, opening, innerDepth: depth - backT };
+  return { field, opening };
 }
 
 function clipRect(rect, clip) {
@@ -689,13 +750,18 @@ export function buildFronts(layout, {
 } = {}, handle = { kind: 'none' }, mats = {}) {
   const hw = normalizeHandle(handle);
   const parts = [];
-  const slots = planHandles(layout, hw);
+  const surfaceOf = (front) => {
+    const isDoor = front.kind === 'door';
+    const wanted = isDoor ? doorStyle : drawerStyle;
+    const style = wanted !== 'slab' && (isDoor || front.y1 - front.y0 >= 0.15) ? wanted : 'slab';
+    return { style, frameWidth: isDoor ? doorFrameWidth : frameWidth };
+  };
+  const slots = planHandles(layout, hw, surfaceOf);
   const carcassMat = mats.carcass ?? mats.front;
   layout.fronts.forEach((front, i) => {
     const own = slots.filter((slot) => slot.front === i);
     const isDoor = front.kind === 'door';
-    const wanted = isDoor ? doorStyle : drawerStyle;
-    const style = wanted !== 'slab' && (isDoor || front.y1 - front.y0 >= 0.15) ? wanted : 'slab';
+    const { style } = surfaceOf(front);
     const cutSlot = own.find((slot) => slot.kind === 'cutout');
     const grooveSlot = own.find((slot) => slot.kind === 'groove');
     const notch = cutSlot && !isDoor && hw.cutoutShape === 'notch';

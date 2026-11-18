@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { beam, endPanelShape, extrudeProfile, puffy, strut } from '../../core/geometry.js';
-import { buildCarcass, buildFronts, planHandles } from '../../core/fronts.js';
-import { HANDLE_KINDS } from '../../core/handles.js';
+import { buildCarcass, buildFronts } from '../../core/fronts.js';
 import { grainAlong } from '../../core/patterns.js';
 import { harmoniousSecondary, shade, swatch } from '../../core/palette.js';
 import { buildApron, buildFeet, buildLegs, legLines, rowAnchors } from '../../core/supports.js';
@@ -169,17 +168,6 @@ const BASES = {
   metalFrame: buildMetalFrame,
 };
 
-const PANEL_SETBACK = 0.006;
-
-function sinkHandles(fronts, layout, slots, p, drawerStyle) {
-  const first = layout.fronts.length;
-  slots.filter((slot) => HANDLE_KINDS[slot.kind]?.part).forEach((slot, i) => {
-    const front = layout.fronts[slot.front];
-    const framed = front.kind === 'door' ? p.doorStyle !== 'slab' : drawerStyle !== 'slab' && front.y1 - front.y0 >= 0.15;
-    if (framed) fronts[first + i].position.z -= PANEL_SETBACK;
-  });
-}
-
 export function buildCabinet(p, kit) {
   const mats = createMats(p, kit.materials);
   const { layout, drawerStyle, hw } = cabinetLayout(p);
@@ -200,7 +188,6 @@ export function buildCabinet(p, kit) {
       fullDepth: carcass.innerDepth,
       opening: carcass.opening,
     }, hw, { front: mats.front, insert: mats.insert, hardware: mats.hardware, carcass: mats.body });
-    sinkHandles(fronts, layout, planHandles(layout, hw), p, drawerStyle);
     parts.push(...fronts);
   }
   return parts;

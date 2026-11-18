@@ -5,7 +5,7 @@ import { generateItem } from '../../src/core/item.js';
 import { buildCarcass } from '../../src/core/fronts.js';
 import { disposeObject, groupParts, mergeByMaterial } from '../../src/core/merge.js';
 import { STYLE_WEIGHTS } from '../../src/furniture/desk/params.js';
-import { carcassField, carcassSpec, frontRegions, kneeSpan, propZones } from '../../src/furniture/desk/layout.js';
+import { carcassSpec, frontRegions, kneeSpan, propZones } from '../../src/furniture/desk/layout.js';
 import * as registry from '../../src/furniture/registry.js';
 import { meshesOf } from '../helpers/invariants.js';
 
@@ -137,7 +137,11 @@ test('the pedestal fields equal the core carcass field', () => {
       if (!region.carcass) continue;
       const spec = region.carcass;
       const built = buildCarcass(spec, null);
-      assert.deepEqual(carcassField(spec), built.field);
+      assert.deepEqual(region.opening, built.opening);
+      assert.equal(region.layout.face, built.field.z);
+      for (const f of region.layout.fronts) {
+        assert.ok(f.x0 >= built.field.x0 - 1e-9 && f.x1 <= built.field.x1 + 1e-9 && f.y0 >= built.field.y0 - 1e-9 && f.y1 <= built.field.y1 + 1e-9);
+      }
       checked++;
     }
   }
