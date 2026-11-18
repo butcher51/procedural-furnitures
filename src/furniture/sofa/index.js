@@ -37,9 +37,9 @@ export default {
       reads: ['style', 'shape', 'cushions'],
       fields: ['legStyle', 'legCount', 'legHeight', 'legThickness', 'legSides', 'legTaper', 'legSplay', 'plinthInset'],
     },
-    { id: 'palette', label: 'Colours', reads: ['style'], fields: ['paletteMood', 'primary', 'secondary', 'bodyMode', 'bodyColor', 'accentColor'] },
-    { id: 'pattern', label: 'Pattern', fields: ['pattern', 'patternScale', 'stripeDirection'] },
-    { id: 'finish', label: 'Frame', reads: ['style', 'legs', 'palette'], fields: ['frameMode', 'frameColor', 'woodName'] },
+    { id: 'palette', label: 'Colours', reads: ['style'], fields: ['paletteMood', 'primary', 'secondary', 'bodyMode', 'bodyColor', 'accentColor', 'pillowSecondary', 'pillowPattern'] },
+    { id: 'pattern', label: 'Pattern', reads: ['palette'], fields: ['fabricTexture', 'fabricThread', 'fabricPattern'] },
+    { id: 'finish', label: 'Frame', reads: ['style', 'legs', 'palette'], fields: ['frameMode', 'frameColor', 'woodName', 'grain'] },
   ],
 
   generateParams(g) {
@@ -48,11 +48,13 @@ export default {
 
   build(p, kit) {
     const m = kit.materials;
+    const plain = (color) => (p.fabricTexture === 'flat' ? m.solid(color, 0.9) : m.pattern({ kind: 'linen', texture: p.fabricTexture, colors: [color], thread: (p.fabricTexture === 'boucle' ? 0.01 : 0.005) * p.fabricThread, seed: p.seed }, { roughness: 0.9 }));
+    const printed = (spec, colors) => m.pattern({ ...spec, colors, seed: p.seed }, { roughness: 0.9 });
     const mats = {
-      surface: m.surface({ color: p.primary, secondary: p.secondary, pattern: p.pattern, scale: p.patternScale, direction: p.stripeDirection }),
-      body: m.solid(p.bodyColor, 0.9),
-      frame: m.frame(p.frameColor, p.frameMode === 'metal' || p.frameMode === 'brass' ? 'metal' : 'wood'),
-      accent: p.pillowCount > 0 ? m.solid(p.accentColor, 0.9) : null,
+      surface: p.fabricPattern === 'none' ? plain(p.primary) : printed(p.fabricPattern, [p.primary, p.secondary]),
+      body: plain(p.bodyColor),
+      frame: p.frameMode === 'wood' ? m.wood(p.frameColor, { grain: p.grain, seed: p.seed }) : m.frame(p.frameColor, p.frameMode === 'metal' || p.frameMode === 'brass' ? 'metal' : 'wood'),
+      accent: p.pillowCount === 0 ? null : p.pillowPattern === 'none' ? plain(p.accentColor) : printed(p.pillowPattern, [p.accentColor, p.pillowSecondary]),
     };
     return buildSofa(p, mats);
   },
@@ -71,14 +73,18 @@ export default {
       chaise ? (p.backFraction > 0 ? `half (${Math.round(p.backFraction * 100)} %)` : 'none') : `${cm(p.backTop)} cm`;
     const backCushions =
       p.backMode === 'tight' ? 'tight' : p.backMode === 'pillow' ? `pillow × ${p.backCushionCount}` : `loose × ${p.backCushionCount} · ${Math.round(p.backCushionAngle)}°`;
-    const pattern =
-      p.pattern === 'solid' ? 'solid' : p.pattern === 'stripes' ? `stripes (${p.stripeDirection}) × ${p.patternScale}/m` : `checker × ${p.patternScale}/m`;
+    const kindName = (spec) => (spec.kind === 'gingham' && spec.overcheck > 0 ? 'gingham overcheck' : spec.kind === 'ticking' && spec.double ? 'double ticking' : spec.kind);
+    const fabric = p.fabricTexture === 'flat' ? 'plain' : p.fabricTexture === 'boucle' ? 'bouclé' : 'linen';
+    const upholstery = p.fabricPattern === 'none' ? fabric : kindName(p.fabricPattern);
+    const patternRows = [['Upholstery', upholstery]];
+    if (p.pillowCount > 0) patternRows.push(['Pillows', p.pillowPattern === 'none' ? fabric : kindName(p.pillowPattern)]);
     const plinthBlack = p.legStyle === 'plinth' && p.frameMode === 'black';
     const swatches = [
       p.primary,
-      p.pattern === 'solid' ? null : p.secondary,
+      p.fabricPattern === 'none' ? null : p.secondary,
       p.bodyColor !== p.primary ? p.bodyColor : null,
       p.pillowCount > 0 ? p.accentColor : null,
+      p.pillowCount > 0 && p.pillowPattern !== 'none' ? p.pillowSecondary : null,
       plinthBlack ? null : p.frameColor,
     ].filter(Boolean);
     const shape = [
@@ -103,8 +109,8 @@ export default {
         },
         { group: 'legs', rows: [['Legs', legs]] },
         { group: 'palette', rows: [['Colours', { swatches: paletteSwatches }]] },
-        { group: 'pattern', rows: [['Pattern', pattern]] },
-        { group: 'finish', rows: [['Frame', p.woodName ? `${p.woodName} wood` : p.frameMode]] },
+        { group: 'pattern', rows: patternRows },
+        { group: 'finish', rows: [['Frame', p.woodName ? `${p.woodName} wood · ${p.grain} grain` : p.frameMode]] },
       ],
       swatches,
     };
