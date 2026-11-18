@@ -32,3 +32,34 @@ export const TYPE_RULES = {
     checks: [centredInX, chairBackAtRear],
   },
 };
+
+const STOOL_HEIGHT_RANGES = {
+  bar: [0.72, 0.8],
+  counter: [0.6, 0.68],
+  diner: [0.6, 0.8],
+  milking: [0.26, 0.45],
+  drum: [0.38, 0.46],
+  slab: [0.22, 0.46],
+};
+
+function stoolNothingAboveSeat({ params, box }) {
+  const over = box.max.y - params.seatHeight;
+  return over <= 0.002 ? [] : [`nothing above seat: bbox top is ${(over * 1000).toFixed(1)} mm above the seat height`];
+}
+
+function stoolFootrestBelowSeat({ params }) {
+  if (params.footrestKind === 'none') return [];
+  const top = params.footrestHeight + (params.footrestDouble ? params.footrestGap : 0) + params.footrestRadius;
+  return top < params.legHeight - 0.05 ? [] : [`footrest below seat: footrest top ${top.toFixed(3)} m is not 5 cm under the support top ${params.legHeight.toFixed(3)} m`];
+}
+
+function stoolSeatHeightInStyleRange({ params, box }) {
+  const [lo, hi] = STOOL_HEIGHT_RANGES[params.style];
+  const top = box.max.y;
+  return top >= lo - 0.002 && top <= hi + 0.002 ? [] : [`seat height: bbox top ${top.toFixed(3)} m outside the ${params.style} range ${lo}-${hi} m`];
+}
+
+TYPE_RULES.stool = {
+  maxSize: { width: 0.7, height: 0.85, depth: 0.7 },
+  checks: [centredInX, stoolNothingAboveSeat, stoolFootrestBelowSeat, stoolSeatHeightInStyleRange],
+};

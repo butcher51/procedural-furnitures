@@ -22,3 +22,6 @@ export function list() {
 }
 
 register(chair);
+
+import stool from './stool/index.js';
+register(stool);
