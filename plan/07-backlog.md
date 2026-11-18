@@ -3,11 +3,13 @@
 Each task is sized for one agent run and can become a GitHub issue for `claude-orchestrator`
 (label `agent:ready`). The **Agent** column names the `.claude/agents` role to put in the issue body.
 
-## Status (2026-11-18)
+## Status (2026-11-18, end of session)
 
-M0–M3 done. ★ Wave 1 approved (PR #8). Decisions at the gate:
-- Chair keeps its original (louder) colours for now so old links reproduce exactly.
-- Minor visual issues are deferred (list below); next is M3.5, then M4.
+- M0–M4 done. ★ Wave 1 approved (PR #8, merged). M3.5 (shader patterns, All view, smaller grids) merged (PR #9). ★ Wave 2 approved (PR #11, `wave2-integration` → main; includes PR #10 specs) — merge PR #11 if not yet merged.
+- Registered types: chair, stool, table, bench, sofa, shelf, cabinet, desk, bed (+ All view). 359 tests; invariants 500/500 per type; W6 wave-1 geometry hashes unchanged; 60 fps full grids (RTX 3070).
+- Decisions: chair keeps its original (louder) palette for link stability; minor visual issues deferred (list below); sofa keeps its pillows until a separate PR adopts core `pillow`.
+- Next (not started): choose between M5 wave 3 (lamps, plants & pots, rugs, wardrobe), M6 ensembles, or a polish pass over the deferred issues.
+- Process that worked: designers (parallel) → architect review + rulings → ★ gate → architect kit (parallel streams in worktrees) → generator engineers (parallel worktrees) → orchestrator merges + verify → visual-reviewer loop (≤ 3 rounds) → /code-review → ★ gate.
 
 ## M3.5 — Shader patterns & mixed showroom
 
