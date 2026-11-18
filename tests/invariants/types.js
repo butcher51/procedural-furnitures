@@ -214,3 +214,57 @@ TYPE_RULES.sofa = {
   maxSize: { width: 2.6, height: 1.0, depth: 2.0 },
   checks: [sofaCentred, sofaArmsSymmetric, sofaBackAtRear, sofaSeatHeight, sofaCushionsInsideArms],
 };
+
+const SHELF_HEIGHT_RANGE = {
+  bookcase: [0.8, 2.1], open: [0.8, 2.0], ladder: [1.2, 1.8], cube: [0.65, 2.0], leaning: [1.5, 2.0],
+};
+
+function shelfFrameBox(partMeshes) {
+  const box = new THREE.Box3();
+  for (const mesh of partMeshes) if (!mesh.userData?.decor) box.union(new THREE.Box3().setFromObject(mesh));
+  return box;
+}
+
+function shelfCentred({ box }) {
+  const c = box.getCenter(new THREE.Vector3());
+  return Math.abs(c.x) <= 0.002 && Math.abs(c.z) <= 0.002 ? [] : [`centred: bbox centre (${(c.x * 1000).toFixed(1)}, ${(c.z * 1000).toFixed(1)}) mm off the axes`];
+}
+
+function shelfHeightInRange({ params, partMeshes }) {
+  const top = shelfFrameBox(partMeshes).max.y;
+  const [lo, hi] = SHELF_HEIGHT_RANGE[params.style];
+  return top >= lo - 0.003 && top <= hi + 0.003 ? [] : [`heightInRange: ${params.style} frame top ${top.toFixed(3)} m outside [${lo}, ${hi}]`];
+}
+
+function shelfGaps({ definition, params }) {
+  const failures = [];
+  for (const s of definition.surfaces(params)) {
+    if (s.top) continue;
+    const topClear = (params.style === 'ladder' || params.style === 'leaning') && s.id.startsWith(`r${params.shelfCount - 1}c`);
+    if (!topClear && (s.clear < 0.2 - 1e-6 || s.clear > 0.42 + 1e-6)) failures.push(`shelfGaps: ${s.id} clear ${s.clear.toFixed(3)} outside [0.20, 0.42]`);
+  }
+  return failures;
+}
+
+function shelfBackBehind({ partMeshes }) {
+  const failures = [];
+  for (const mesh of partMeshes.filter((m) => m.name === 'back')) {
+    const max = new THREE.Box3().setFromObject(mesh).max.z;
+    if (max >= 0) failures.push(`back panel: bbox max z ${max.toFixed(3)} is not behind the item centre`);
+  }
+  return failures;
+}
+
+function shelfLeaningRearContact({ params, partMeshes, box }) {
+  if (params.style !== 'leaning') return [];
+  const rear = new THREE.Box3();
+  for (const mesh of partMeshes) if (mesh.name === 'rear' || mesh.name === 'crate') rear.union(new THREE.Box3().setFromObject(mesh));
+  if (rear.isEmpty()) return ['leaning rear contact: no rear posts or crate'];
+  const plane = box.min.z + (params.backKind === 'panel' ? params.backThickness : 0);
+  return rear.min.y <= 0.003 && rear.min.z <= plane + 0.01 ? [] : [`leaning rear contact: rear support min z ${rear.min.z.toFixed(3)} vs back plane ${plane.toFixed(3)}`];
+}
+
+TYPE_RULES.shelf = {
+  maxSize: { width: 1.65, height: 2.1, depth: 0.62 },
+  checks: [shelfCentred, shelfHeightInRange, shelfGaps, shelfBackBehind, shelfLeaningRearContact],
+};
