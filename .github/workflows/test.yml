@@ -1,0 +1,42 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: |
+          for t in chair stool table bench sofa; do
+            node tests/invariants/run.mjs --type "$t" --count 500
+          done
+
+  visual:
+    if: contains(github.event.pull_request.labels.*.name, 'visual')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: |
+          for t in chair stool table bench sofa; do
+            npm run snapshot -- --type "$t" --seed ci --count 24 --name "$t-ci"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: contact-sheets
+          path: out/snapshots/*.png

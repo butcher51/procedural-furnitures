@@ -8,7 +8,8 @@
     "test": "node --test \"tests/unit/**/*.test.js\"",
     "snapshot": "node .claude/skills/snapshot/scripts/snapshot.mjs",
     "verify": "node .claude/skills/verify-furniture/scripts/verify.mjs",
-    "metrics": "node scripts/metrics.mjs"
+    "metrics": "node scripts/metrics.mjs",
+    "perf": "node tests/perf/grid.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.49.1",
