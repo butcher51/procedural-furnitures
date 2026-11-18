@@ -192,7 +192,13 @@ export function propPlan(p) {
   const zone = (id, x0, x1, y, clear, zc, depth) => ({
     id, x0, x1, y, clear, zBack: zc - depth / 2 - pad, zFront: zc + depth / 2 + pad, back: false, top: true,
   });
+  const mx = p.topAddon === 'rail' ? Math.max(m, 0.015 + p.addonDepth + 0.015) : m;
   const obstacles = [];
+  if (p.topAddon === 'rail') {
+    const wz = -D / 2 + 0.015 + p.addonDepth + wingLength(p) + 0.01;
+    const wx = 0.015 + p.addonDepth + 0.01;
+    obstacles.push({ x0: -W / 2, x1: -W / 2 + wx, zBack: -D / 2, zFront: wz }, { x0: W / 2 - wx, x1: W / 2, zBack: -D / 2, zFront: wz });
+  }
   if (set.books && p.bookSizes.length) {
     const fp = stackFootprint(p.bookSizes);
     const sorted = [...p.bookSizes].sort((a, b) => b.h * b.d - a.h * a.d);
@@ -206,16 +212,16 @@ export function propPlan(p) {
       y = riserShelfTop(p);
       zc = -D / 2 + 0.03 + p.addonDepth / 2;
     } else {
-      x0 = left ? -W / 2 + m : W / 2 - m - fp.w - 2 * pad;
+      x0 = left ? -W / 2 + mx : W / 2 - mx - fp.w - 2 * pad;
       zc = backLimit + fp.d / 2 + pad;
     }
     const s = zone('books', x0, x0 + fp.w + 2 * pad, y, fp.h + 0.01, zc, fp.d);
     plans.push({ kind: 'books', surface: s, records });
-    if (!p.booksOnRiser) obstacles.push(s);
+    obstacles.push(s);
   }
   if (set.cup) {
     const size = p.cupRadius * 2;
-    const x0 = left ? W / 2 - m - size - 2 * pad : -W / 2 + m;
+    const x0 = left ? W / 2 - mx - size - 2 * pad : -W / 2 + mx;
     const zc = backLimit + size / 2 + pad;
     const s = zone('cup', x0, x0 + size + 2 * pad, H, p.cupHeight + 0.01, zc, size);
     plans.push({ kind: 'cup', surface: s, records: [{ k: 'cup', x: pad, size, h: p.cupHeight, c: 0 }] });
