@@ -110,8 +110,20 @@ function buildPedestalBase(p, mats) {
   }, mats.frame)];
 }
 
+function cleatLengthFor(p) {
+  const full = 0.8 * p.topDepth;
+  if (p.topShape === 'rect') return full;
+  const hx = p.topLength / 2;
+  const hz = p.topDepth / 2;
+  const x = Math.min(hx - 0.01, hx - p.trestleInset + p.beamWidth / 2);
+  const e = p.topExponent;
+  const zMax = hz * Math.max(0, 1 - (x / hx) ** e) ** (1 / e);
+  return Math.max(0.2, Math.min(full, 2 * (zMax - 0.05)));
+}
+
 function buildTrestleBase(p, mats) {
   return [buildTrestle({
+    cleatLength: cleatLengthFor(p),
     length: p.topLength,
     depth: p.topDepth,
     top: p.legHeight,

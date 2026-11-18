@@ -1,4 +1,5 @@
-import { hsl, pickWood, secondaryColor, SECONDARY_MODES, STONE_TONES, FRAME_COLORS } from '../../core/color.js';
+import { hsl, pickWood, STONE_TONES, FRAME_COLORS } from '../../core/color.js';
+import { paintColor, accentColor } from '../../core/palette.js';
 import { rollStyle, weightedPick } from '../../core/rng.js';
 
 export const STYLE_WEIGHTS = { dining: 0.3, coffee: 0.24, side: 0.16, cafe: 0.15, trestle: 0.15 };
@@ -53,7 +54,7 @@ function generateTop(g, style) {
     const topThickness = lerp(THICKNESS[style], uThick);
     const topEdge = lerp(style === 'trestle' ? [0.004, 0.02] : [0.004, 0.015], uEdge);
     const topExponent = topShape === 'rect' ? 10 : topShape === 'squircle' ? lerp([3, 5], uExp) : 2;
-    const topSides = round ? (topLength <= 0.8 ? 12 : 16) : 0;
+    const topSides = round ? (topLength <= 0.8 ? 18 : 24) : 0;
     let seats = 0;
     if (style === 'dining' || style === 'trestle') {
       seats = round ? clamp(Math.floor((Math.PI * topLength) / 0.6), 3, 6) : clamp(2 * Math.floor(topLength / 0.6), 4, 8);
@@ -67,8 +68,9 @@ const LEG_PROFILE_WEIGHTS = {
   coffee: { straight: 0.3, tapered: 0.3, splayed: 0.4 },
   side: { straight: 0.4, tapered: 0.3, splayed: 0.3 },
 };
-const LEG_THICKNESS = { dining: [0.05, 0.09], coffee: [0.035, 0.06], side: [0.025, 0.045] };
+const LEG_THICKNESS = { dining: [0.05, 0.09], coffee: [0.035, 0.06], side: [0.032, 0.048] };
 const OVERHANG = { dining: [0.04, 0.14], coffee: [0.03, 0.1], side: [0.01, 0.05] };
+const MAX_LEG_EDGE = { dining: 0.13, coffee: 0.17, side: 0.14 };
 const APRON_CHANCE = { dining: 0.85, coffee: 0.4, side: 0.15 };
 const APRON_HEIGHT = { dining: [0.06, 0.11], coffee: [0.04, 0.08], side: [0.04, 0.08] };
 const STRETCHER_WEIGHTS = {
@@ -94,17 +96,18 @@ function legsBase(style, t, d) {
   const legHeight = topHeight - topThickness;
   const rectLike = topShape === 'rect';
   let legCount = 4;
-  if (style === 'coffee' && !rectLike) legCount = pickU(uCount, [[3, 0.3], [4, 0.7]]);
+  if (style === 'coffee' && !rectLike) legCount = topLength > 0.8 ? 4 : pickU(uCount, [[3, 0.3], [4, 0.7]]);
   if (style === 'side' && !rectLike) legCount = pickU(uCount, [[3, 0.55], [4, 0.45]]);
   const legProfile = pickU(uProfile, LEG_PROFILE_WEIGHTS[style]);
   let legThickness = lerp(LEG_THICKNESS[style], uThick);
   const legSides = legProfile === 'turned' ? 8 : pickU(uSides, [[4, 0.5], [6, 0.25], [8, 0.25]]);
   const legTaper = legProfile === 'tapered' ? lerp([0.5, 0.75], uTaper) : legProfile === 'splayed' ? lerp([0.55, 0.8], uTaper) : 1;
-  const overhang = Math.min(lerp(OVERHANG[style], uOverhang), 0.2 * Math.min(topLength, topDepth));
-  let legSplay = 0;
-  if (legProfile === 'splayed') legSplay = Math.min(lerp([0.03, 0.08], uSplay), 0.14 * legHeight, overhang + 0.7 * legThickness);
   const hasApron = legProfile === 'turned' || uApron < APRON_CHANCE[style];
   if (style === 'dining' && !hasApron) legThickness = Math.max(legThickness, 0.06);
+  const edgeCap = Math.max(0.012, MAX_LEG_EDGE[style] - 1.2 * legThickness);
+  const overhang = Math.min(lerp(OVERHANG[style], uOverhang) * (topShape === 'round' ? 0.5 : 1), edgeCap, 0.2 * Math.min(topLength, topDepth));
+  let legSplay = 0;
+  if (legProfile === 'splayed') legSplay = Math.min(lerp([0.03, 0.08], uSplay), 0.14 * legHeight, overhang + 0.7 * legThickness);
   let apronHeight = lerp(APRON_HEIGHT[style], uApronH);
   apronHeight = style === 'dining' ? Math.min(apronHeight, legHeight - 0.6) : Math.min(apronHeight, 0.35 * legHeight);
   const apronThickness = lerp([0.018, 0.025], uApronT);
@@ -114,7 +117,7 @@ function legsBase(style, t, d) {
   if (hasShelf) stretcher = 'none';
   const stretcherHeight = Math.min(lerp(STRETCHER_HEIGHT[style], uStretchH), 0.4 * legHeight);
   const stretcherThickness = Math.max(0.015, legThickness * lerp([0.45, 0.6], uStretchT));
-  const shelfHeight = Math.min(lerp([0.06, 0.2], uShelfH), 0.45 * legHeight);
+  const shelfHeight = Math.min(lerp([0.12, 0.22], uShelfH), 0.45 * legHeight);
   const shelfThickness = lerp([0.015, 0.025], uShelfT);
   const shelfShape = legCount === 3 ? 'round' : topShape;
   return {
@@ -176,16 +179,14 @@ function generateBase(g, style, t) {
 
 function generatePalette(g) {
   return g.roll('palette', (r) => {
-    const hue = r.next();
-    const sat = r.range(0.3, 0.65);
-    const light = r.range(0.4, 0.65);
-    const mode = r.pick(SECONDARY_MODES);
-    return { paint: hsl(hue, sat, light), accent: secondaryColor(mode, hue) };
+    const paint = paintColor(r);
+    const accent = accentColor(r, paint);
+    return { paint: paint.hex, accent: accent.hex };
   });
 }
 
 const TOP_FINISH_WEIGHTS = {
-  dining: { wood: 0.65, painted: 0.2, stone: 0.15 },
+  dining: { wood: 0.7, painted: 0.15, stone: 0.15 },
   trestle: { wood: 0.9, painted: 0.1, stone: 0 },
   coffee: { wood: 0.5, painted: 0.25, stone: 0.25 },
   side: { wood: 0.45, painted: 0.35, stone: 0.2 },
@@ -194,10 +195,10 @@ const TOP_FINISH_WEIGHTS = {
 
 function baseModeWeights(style, topFinish) {
   const painted = topFinish === 'painted' ? 'accent' : 'painted';
-  if (style === 'cafe') return { black: 0.45, metal: 0.3, white: 0.1, [painted]: 0.15 };
-  if (style === 'trestle') return { wood: 0.75, [painted]: 0.15, black: 0.1 };
-  if (topFinish === 'wood') return { wood: 0.55, [painted]: 0.2, black: 0.15, white: 0.1 };
-  return { wood: 0.25, black: 0.3, white: 0.15, metal: 0.15, [painted]: 0.15 };
+  if (style === 'cafe') return { black: 0.45, metal: 0.3, white: 0.1, [painted]: 0.08, wood: 0.07 };
+  if (style === 'trestle') return { wood: 0.82, [painted]: 0.08, black: 0.1 };
+  if (topFinish === 'wood') return { wood: 0.67, [painted]: 0.08, black: 0.15, white: 0.1 };
+  return { wood: 0.28, black: 0.32, white: 0.17, metal: 0.17, [painted]: 0.06 };
 }
 
 function generateFinish(g, style, palette) {
