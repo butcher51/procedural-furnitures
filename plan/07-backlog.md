@@ -17,7 +17,7 @@ M0–M3 done. ★ Wave 1 approved (PR #8). Decisions at the gate:
 | 3.5.2 | Adopt shader patterns in stool, table, bench, sofa (wood parts get grain; fabrics gain dots/floral); colour-calm and visual check | generator-engineer | 3.5.1 |
 | 3.5.3 | "All" chip: mixed showroom with every type in one grid, dense packed layout, panel/re-roll per item, URL `type=all` | ui-engineer | M3 |
 | 3.5.4 | Smaller grids: reduce `cell.gridSize` per type (and for All) | ui-engineer | M3 |
-| 3.5.5 | Visual review of patterns + All view | visual-reviewer | 3.5.2–3.5.4 |
+| 3.5.5 | Visual review of patterns + All view (round 2 passed) | visual-reviewer | 3.5.2–3.5.4 |
 
 ## Deferred minor issues (wave 1, from `reviews/*-2.md`)
 
@@ -26,6 +26,7 @@ M0–M3 done. ★ Wave 1 approved (PR #8). Decisions at the gate:
 - **Bench:** upholstered with back on a tall base reads as a small sofa; rose/green complementary stripes; plank grain as 2–3 broad bands; ochre wood looks painted; slat grain invisible; white frame + light slats lack contrast.
 - **Sofa:** pillow on L sectionals placed at the seat/return junction; chaise pillow edge-on and sinking into the cushion; pillows taller than a low back; bare back frame towering on armless pieces; faceted roll arms; boxy loveseat #38.
 - **Chair:** original palette is louder than the other types (kept on purpose for link stability).
+- **Patterns (from `reviews/patterns-2.md`):** speckle fades over the far half of long bench tops; pinstripe-like wood remains on some wide tops (table #5 right half, stool #13); a few dark tops still show little grain; very high-contrast dark mahogany (stool #7); faint dotted seam on white bench slats; loud dot/ground pairs (bench #11, All Stool 9); phone overview grid small with empty space above.
 
 ## M0 — Bootstrap
 

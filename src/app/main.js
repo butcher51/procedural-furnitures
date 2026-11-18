@@ -154,9 +154,9 @@ try {
 } catch {}
 
 const sidePanel = window.matchMedia('(min-width: 640px)');
+const SIDE_PANEL_INSET = 316;
 function applySidePanelInset() {
-  const rect = $('panel').getBoundingClientRect();
-  stage?.setInsetLeft(sidePanel.matches ? Math.round((rect.width || 300) + 16) : 0);
+  stage?.setInsetLeft(sidePanel.matches && !state.single ? SIDE_PANEL_INSET : 0);
 }
 sidePanel.addEventListener('change', applySidePanelInset);
 window.addEventListener('resize', applySidePanelInset);

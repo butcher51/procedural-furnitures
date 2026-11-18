@@ -87,7 +87,7 @@ export function createStage(viewport) {
       const preferred = direction.length() * extent * fit;
       const vHalf = THREE.MathUtils.degToRad(camera.fov) / 2;
       const hHalf = Math.atan(Math.tan(vHalf) * available);
-      const fitWidth = (extent * fit) / Math.sin(hHalf);
+      const fitWidth = (extent * 1.4 * fit) / Math.sin(hHalf);
       const distance = Math.max(preferred, fitWidth);
       controls.maxDistance = Math.max(controls.maxDistance, distance * 1.5);
       overview.position.copy(direction.normalize().multiplyScalar(distance));
