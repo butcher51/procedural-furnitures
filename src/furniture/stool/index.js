@@ -70,7 +70,7 @@ export default {
     if (usesCushion(p)) {
       mats.cushion = p.pattern === 'none'
         ? m.solid(p.cushionColor)
-        : m.pattern({ ...p.pattern, colors: [p.cushionColor, p.cushionSecondary], seed: p.seed });
+        : m.pattern({ ...p.pattern, colors: p.pattern.kind === 'linen' ? [p.cushionColor] : [p.cushionColor, p.cushionSecondary], seed: p.seed });
     }
     if (p.style === 'drum' && p.hasCushion) mats.body = m.solid(p.bodyColor, 0.9);
     if (p.panMode === 'frame') mats.pan = frame;

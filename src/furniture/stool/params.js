@@ -77,7 +77,7 @@ export const PATTERN_WEIGHTS = [
 
 export const GRAIN_WEIGHTS = [['fine', 0.25], ['plain', 0.5], ['bold', 0.25]];
 
-function patternSpec(r) {
+function patternSpec(r, seatWidth = 0.5) {
   const kind = weightedPick(r, PATTERN_WEIGHTS);
   const a = r.next();
   const b = r.next();
@@ -97,7 +97,7 @@ function patternSpec(r) {
     case 'herringbone':
       return { kind: 'herringbone', band: 0.025 + 0.02 * a, spacing: 0.008 + 0.004 * b, width: 0.45 };
     case 'floral':
-      return { kind: 'floral', spacing: 0.09 + 0.05 * a, petals: 5, size: 0.2 + 0.05 * b, leaves: true };
+      return { kind: 'floral', spacing: (0.09 + 0.05 * a) * Math.min(1, Math.max(0.6, seatWidth / 0.55)), petals: 5, size: 0.2 + 0.05 * b, leaves: true };
     default:
       return 'none';
   }
@@ -324,7 +324,8 @@ export function generateStoolParams(g) {
   const palette = g.roll('palette', (r) => {
     const mood = weightedPick(r, [['neutral', 0.3], ['muted', 0.5], ['bold', 0.2]]);
     const cushion = fabricColor(r, { mood });
-    const mode = r.pick(HARMONY_MODES);
+    const rolled = r.pick(HARMONY_MODES);
+    const mode = rolled === 'dark' && cushion.l < 0.42 ? 'light' : rolled;
     const accent = paintColor(r);
     return {
       cushionColor: cushion.hex,
@@ -334,7 +335,7 @@ export function generateStoolParams(g) {
     };
   });
 
-  const pattern = g.roll('pattern', (r) => ({ pattern: patternSpec(r) }));
+  const pattern = g.roll('pattern', (r) => ({ pattern: patternSpec(r, shape.seatWidth) }));
 
   const finish = g.roll('finish', (r) => {
     const isWood = r.chance(WOOD_CHANCE[style]);

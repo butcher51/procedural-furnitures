@@ -191,3 +191,25 @@ test('mergeByMaterial fills attributes that only some parts carry', () => {
   assert.equal(merged.children.length, 1);
   assert.equal(merged.children[0].geometry.attributes.uv.count, merged.children[0].geometry.attributes.position.count);
 });
+
+test('2D projection uses a biased per-face axis and an isotropic footprint, so 45 degree facets never flip per pixel', () => {
+  const m = kit.materials.pattern({ kind: 'floral', colors: ['#e8dcc4'] });
+  const shader = { uniforms: {}, vertexShader: THREE.ShaderLib.standard.vertexShader, fragmentShader: THREE.ShaderLib.standard.fragmentShader };
+  m.onBeforeCompile(shader);
+  assert.match(shader.fragmentShader, /abs\(normalize\(cross\(patDx, patDy\)\)\) \* vec3\(1\.0, 1\.3, 1\.19\)/);
+  assert.match(shader.fragmentShader, /float patPx = patFootprint\(patDx, patDy\);/);
+  const w = [1, 1.3, 1.19];
+  const plan = [22.5, 30, 36, 45, 54, 60, 67.5];
+  const bevel = [22.5, 30, 45, 60, 67.5];
+  for (const [i, j, facets] of [[0, 1, bevel], [0, 2, plan], [1, 2, bevel]]) {
+    const deg = (Math.atan(Math.max(w[i], w[j]) / Math.min(w[i], w[j])) * 180) / Math.PI;
+    for (const facet of facets) assert.ok(Math.abs(deg - facet) > 2, `${i}/${j} tie at ${deg.toFixed(1)} deg`);
+  }
+});
+
+test('linen and boucle stay close to the base colour by default', () => {
+  const p = normalizePattern({ kind: 'linen', colors: ['#8a7f70'] });
+  assert.equal(p.strength, 0.4);
+  const l = (hex) => new THREE.Color(hex).getHSL({}).l;
+  for (const c of p.colors.slice(1)) assert.ok(Math.abs(l(c) - l(p.colors[0])) <= 0.05, c);
+});
