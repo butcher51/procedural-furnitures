@@ -69,11 +69,15 @@ export function weightedShuffle(r, weights) {
     .map(({ value }) => value);
 }
 
-export function rollStyle(g, styles) {
-  const base = weightedPick(createRng(`${g.seed}/style/0`), styles);
-  const n = g.count('style');
+export function rollCycle(g, groupId, weights) {
+  const base = weightedPick(createRng(`${g.seed}/${groupId}/0`), weights);
+  const n = g.count(groupId);
   if (n === 0) return base;
-  const others = weightEntries(styles).filter(([value]) => value !== base);
-  const cycle = [...weightedShuffle(createRng(`${g.seed}/style/order`), others), base];
+  const others = weightEntries(weights).filter(([value]) => value !== base);
+  const cycle = [...weightedShuffle(createRng(`${g.seed}/${groupId}/order`), others), base];
   return cycle[(n - 1) % cycle.length];
+}
+
+export function rollStyle(g, styles) {
+  return rollCycle(g, 'style', styles);
 }

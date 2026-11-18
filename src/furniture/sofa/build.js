@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { edgeRadius, extrudeProfile, extrudeUp, puffy, roundedDiscGeometry } from '../../core/geometry.js';
 import { splitSpan } from '../../core/layout.js';
 import { grainAlong } from '../../core/patterns.js';
-import { buildLegs, rowAnchors } from '../../core/supports.js';
+import { buildFeet, buildLegs, rowAnchors } from '../../core/supports.js';
 
 const rad = (deg) => (deg * Math.PI) / 180;
 const OVERLAP = 0.004;
@@ -119,16 +119,6 @@ function buildArm(p, L, mats, sx, d, zc, zStart, zEnd) {
   return parts;
 }
 
-function buildFeet(p, mats, anchors) {
-  const parts = [];
-  const h = p.legHeight + OVERLAP;
-  for (const [x, z] of anchors) {
-    const geo = roundedDiscGeometry(p.legThickness / 2, h, p.legThickness * 0.3, 8);
-    parts.push(grainAlong(place(new THREE.Mesh(geo, mats.frame), x, h / 2, z), 'y'));
-  }
-  return parts;
-}
-
 function buildSupport(p, L, mats, anchors, footprint, plinthOutline) {
   if (p.legStyle === 'plinth') {
     const h = p.legHeight + OVERLAP;
@@ -136,7 +126,9 @@ function buildSupport(p, L, mats, anchors, footprint, plinthOutline) {
     const w = footprint.width - 2 * p.plinthInset, d = footprint.depth - 2 * p.plinthInset;
     return [grainAlong(place(puffy(w, h, d, 0.01, mats.frame, 2), 0, h / 2, footprint.zc), 'x')];
   }
-  if (p.legStyle === 'bun') return buildFeet(p, mats, anchors);
+  if (p.legStyle === 'bun') {
+    return buildFeet(anchors, { height: p.legHeight + OVERLAP, radius: p.legThickness / 2, edge: p.legThickness * 0.3 }, mats.frame);
+  }
   if (p.legStyle === 'sled') {
     const legs = { legCount: 2, legThickness: p.legThickness, legSides: p.legSides, legTaper: p.legTaper, legSplay: 0, puff: 0.006 };
     return [buildLegs(legs, mats, { width: footprint.width, depth: footprint.depth, top: p.legHeight })];
