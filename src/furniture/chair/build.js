@@ -5,6 +5,8 @@ import {
 } from '../../core/geometry.js';
 import { buildCurvyLegs, buildLegs } from '../../core/supports.js';
 
+const THIN_BAR_BEVEL_SEGMENTS = 2;
+
 function buildSeat(p, mats) {
   const geo =
     p.seatShape === 'round'
@@ -49,14 +51,14 @@ function buildBackrest(p, mats) {
   if (p.backStyle === 'slats') {
     const slatW = Math.min(innerW / (n * 2), 0.04);
     for (let i = 0; i < n; i++) {
-      const slat = puffy(slatW, innerH, t * 0.6, p.puff, mats.frame);
+      const slat = puffy(slatW, innerH, t * 0.6, p.puff, mats.frame, THIN_BAR_BEVEL_SEGMENTS);
       slat.position.set(-innerW / 2 + (innerW * (i + 0.5)) / n, innerH / 2, 0);
       pivot.add(slat);
     }
   } else {
     const barH = Math.min(innerH / (n * 2.5), 0.035);
     for (let i = 0; i < n; i++) {
-      const bar = puffy(innerW, barH, t * 0.6, p.puff, mats.frame);
+      const bar = puffy(innerW, barH, t * 0.6, p.puff, mats.frame, THIN_BAR_BEVEL_SEGMENTS);
       bar.position.y = (innerH * (i + 0.5)) / n;
       pivot.add(bar);
     }
