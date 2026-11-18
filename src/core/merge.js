@@ -24,7 +24,8 @@ export function mergeByMaterial(root) {
   const merged = new THREE.Group();
   for (const [material, geometries] of byMaterial) {
     if (!usesGrain(material)) geometries.forEach((g) => g.deleteAttribute('grain'));
-    fillMissingAttributes(geometries);
+    if (!material.vertexColors) geometries.forEach((g) => g.deleteAttribute('color'));
+    fillMissingAttributes(geometries, material.vertexColors ? { color: 1 } : {});
     const mesh = new THREE.Mesh(mergeGeometries(geometries), material);
     mesh.castShadow = mesh.receiveShadow = true;
     merged.add(mesh);
@@ -33,13 +34,15 @@ export function mergeByMaterial(root) {
   return merged;
 }
 
-export function fillMissingAttributes(geometries) {
+export function fillMissingAttributes(geometries, fills = {}) {
   const sizes = new Map();
   for (const g of geometries) for (const [name, a] of Object.entries(g.attributes)) if (!sizes.has(name)) sizes.set(name, a.itemSize);
   for (const g of geometries) {
     for (const [name, itemSize] of sizes) {
       if (g.attributes[name]) continue;
-      g.setAttribute(name, new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * itemSize), itemSize));
+      const array = new Float32Array(g.attributes.position.count * itemSize);
+      if (fills[name]) array.fill(fills[name]);
+      g.setAttribute(name, new THREE.BufferAttribute(array, itemSize));
     }
   }
   return geometries;

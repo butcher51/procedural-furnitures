@@ -24,7 +24,9 @@ src/
                         roundedDiscGeometry, bentBandGeometry, normalizeUVs, lathe helpers
     supports.js         legAnchors, buildLegs, buildCurvyLegs, pedestal, runners, trestle
     fronts.js           drawers, doors, handles (wave 2)
-    merge.js            mergeByMaterial, disposeObject
+    soft.js             pillow, drapeSheet (soft goods, wave 2)
+    fill.js             decor vocabulary: paintVertices, bookGeometry, DECOR, layoutShelfContents, buildDecor (wave 2)
+    merge.js            mergeByMaterial (vertex-colour rule), disposeObject
     dna.js              style DNA: shared palette/finish/roundness (wave 4)
   furniture/
     registry.js         register(), get(id), list()
@@ -73,7 +75,8 @@ export default {
 | `cell` | Grid spacing in meters and grid size, so big items (beds) get fewer, wider cells. |
 | `groups` | The re-rollable parameter groups, in the order they are rolled. Later groups may read earlier groups' results, but not the other way round. Each group lists the `fields` it owns and the earlier groups it `reads`. `rerollable: false` fixes a group (chair `style`). Optional `appliesTo(params) → boolean`: pure, never affects generation; when false the panel hides the group's ⟳ and the re-roll test skips its change rate for that seed (a re-roll must then change no field outside the group's own). `core/item.js` exposes `groupApplies(def, id, params)`, `canRoll(def, id, params)` and `shortcutGroups(def)`. |
 | `generateParams(g, dna)` | Pure. Draws randomness only through `g.roll(groupId, fn)` (see below). Returns plain JSON-serialisable data that always includes `seed`, `type` and `style`. |
-| `build(params, kit)` | Pure. Returns an array of `Object3D` parts in item space: y-up, standing on y = 0, front faces +z, centred on x/z. |
+| `build(params, kit)` | Pure. Returns an array of `Object3D` parts in item space: y-up, standing on y = 0, front faces +z, centred on x/z. Build may derive detail from a seed that is a param owned by a group (a shelf's `fillSeed` layout, a duvet's `wrinkleSeed`, a pattern's `seed`): same params, same geometry. |
+| `surfaces(params)` | Optional, pure. The `Surface` records (`{ id, x0, x1, y, clear, zBack, zFront, back }`, item space) the type puts decor on. When present, the invariant sweep runs `decorSupported` and `decorInside` over the `buildDecor` meshes. |
 | `describe(params)` | Returns `{ sections: [{ group, rows: [[label, value]] }], swatches: [hex] }`. Rows are grouped so the panel can put a re-roll button on each section. |
 
 `kit` bundles `core/*` and the materials made for these params. The app calls:
@@ -145,8 +148,9 @@ single item. The rest of the grid is not regenerated.
 
 ## Open technical questions
 
-- **Instancing vs merging** for the many identical small parts (books, slats). Start with merging; revisit if a
-  shelf blows the triangle budget.
+- **Instancing vs merging** for the many identical small parts (books, slats). Decided in wave 2: merged. Books and
+  objects are written into one vertex-coloured mesh per surface (`buildDecor`) and share the item's one `decor`
+  role (`materials.vertexColor()`), which counts toward the 4 draw calls.
 - **Canvas in Node tests.** Inject a `textureFactory` that returns `null` in tests, so materials fall back to
   `color`. That avoids pulling in the `canvas` npm package.
 - **Shadows for large grids.** A 4096 shadow map over a wider area gets blurry. Consider fitting the shadow

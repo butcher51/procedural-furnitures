@@ -164,6 +164,56 @@ export function stable(meshes, box, label) {
   return [`stable (${label}): bbox centre (${centre.x.toFixed(3)}, ${centre.z.toFixed(3)}) is ${mm(outside)} outside the floor contact hull`];
 }
 
+export const DECOR_TOLERANCE = 0.001;
+
+export function decorMeshes(meshes) {
+  return meshes.filter((mesh) => mesh.userData?.surface && Array.isArray(mesh.userData.decor));
+}
+
+export function decorSupported({ partMeshes }) {
+  const failures = [];
+  const v = new THREE.Vector3();
+  for (const mesh of decorMeshes(partMeshes)) {
+    const position = mesh.geometry.attributes.position;
+    for (const entry of mesh.userData.decor) {
+      let bottom = Infinity;
+      for (let i = entry.start; i < entry.start + entry.count; i++) bottom = Math.min(bottom, v.fromBufferAttribute(position, i).applyMatrix4(mesh.matrixWorld).y);
+      if (Math.abs(bottom - entry.support) > DECOR_TOLERANCE) {
+        failures.push(`decor supported (${mesh.userData.surface.id}): ${entry.k} bottom ${mm(bottom)} vs support ${mm(entry.support)}`);
+      }
+    }
+  }
+  return failures;
+}
+
+const SURFACE_KEYS = ['x0', 'x1', 'y', 'clear', 'zBack', 'zFront'];
+
+export function decorInside({ definition, params, partMeshes }) {
+  const failures = [];
+  const declared = definition?.surfaces ? definition.surfaces(params) : null;
+  const v = new THREE.Vector3();
+  const t = DECOR_TOLERANCE;
+  for (const mesh of decorMeshes(partMeshes)) {
+    const s = mesh.userData.surface;
+    if (declared) {
+      const match = declared.find((d) => d.id === s.id);
+      if (!match || SURFACE_KEYS.some((k) => Math.abs(match[k] - s[k]) > 1e-9)) {
+        failures.push(`decor inside (${s.id}): surface is not one of definition.surfaces(params)`);
+        continue;
+      }
+    }
+    const position = mesh.geometry.attributes.position;
+    for (let i = 0; i < position.count; i++) {
+      v.fromBufferAttribute(position, i).applyMatrix4(mesh.matrixWorld);
+      if (v.x < s.x0 - t || v.x > s.x1 + t || v.y < s.y - t || v.y > s.y + s.clear + t || v.z < s.zBack - t || v.z > s.zFront + t) {
+        failures.push(`decor inside (${s.id}): vertex (${v.x.toFixed(3)}, ${v.y.toFixed(3)}, ${v.z.toFixed(3)}) outside the surface box`);
+        break;
+      }
+    }
+  }
+  return failures;
+}
+
 export function checkInvariants({ definition, params, root, object }) {
   const { maxSize, checks } = rulesFor(definition);
   const partMeshes = meshesOf(root);
@@ -184,6 +234,7 @@ export function checkInvariants({ definition, params, root, object }) {
     failures.push('merge: merged bbox differs from the pre-merge parts bbox');
   }
   const context = { definition, params, root, object, partMeshes, mergedMeshes, box: mergedBox };
-  for (const check of checks) failures.push(...check(context));
+  const decor = definition.surfaces || decorMeshes(partMeshes).length ? [decorSupported, decorInside] : [];
+  for (const check of [...decor, ...checks.filter((c) => !decor.includes(c))]) failures.push(...check(context));
   return failures;
 }
