@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { grainAlong } from '../../core/patterns.js';
 import { buildDecor, paintVertices } from '../../core/fill.js';
-import { buildCarcass, buildFronts, planHandles } from '../../core/fronts.js';
-import { HANDLE_KINDS, normalizeHandle } from '../../core/handles.js';
+import { buildCarcass, buildFronts } from '../../core/fronts.js';
+import { normalizeHandle } from '../../core/handles.js';
 import {
   beam, endPanelShape, extrudeProfile, extrudeUp, normalizeUVs, puffy, strut, superellipseShape,
 } from '../../core/geometry.js';
@@ -257,26 +257,13 @@ const BASES = {
   panel: buildPanelDesk,
 };
 
-const PANEL_SETBACK = 0.006;
-
-function seatHandles(built, layout, hw, drawerStyle) {
-  const slots = planHandles(layout, hw).filter((slot) => HANDLE_KINDS[slot.kind]?.part);
-  const handles = built.slice(layout.fronts.length).filter((part) => part.isGroup);
-  slots.forEach((slot, i) => {
-    const front = layout.fronts[slot.front];
-    const framed = front.kind === 'drawer' && drawerStyle !== 'slab' && front.y1 - front.y0 >= 0.15;
-    if (framed && handles[i]) handles[i].position.z -= PANEL_SETBACK;
-  });
-  return built;
-}
-
 function buildRegions(p, mats) {
   const parts = [];
   const hw = normalizeHandle({ kind: p.handleKind, size: p.handleSize });
   const fronts = { front: mats.front, hardware: mats.hardware, carcass: mats.body };
   for (const region of frontRegions(p)) {
     if (region.carcass) parts.push(...buildCarcass({ ...region.carcass }, mats.body).parts);
-    const built = buildFronts(region.layout, {
+    parts.push(...buildFronts(region.layout, {
       thickness: p.frontThickness,
       drawerStyle: p.drawerStyle,
       doorStyle: 'slab',
@@ -284,8 +271,7 @@ function buildRegions(p, mats) {
       members: region.members,
       backers: region.backers,
       opening: region.opening ?? null,
-    }, hw, fronts);
-    parts.push(...seatHandles(built, region.layout, hw, p.drawerStyle));
+    }, hw, fronts));
   }
   return parts;
 }

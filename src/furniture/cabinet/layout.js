@@ -1,4 +1,4 @@
-import { solveFronts } from '../../core/fronts.js';
+import { carcassField, solveFronts } from '../../core/fronts.js';
 
 export const FRAMED_DRAWER_MAX_FRONTS = 8;
 
@@ -14,13 +14,9 @@ export function carcassSpec(p) {
 
 export function faceField(p) {
   const { width, sides } = carcassSpec(p);
-  const y0 = p.legHeight;
-  const y1 = p.height - p.topThickness;
-  if (p.construction === 'inset') {
-    const inner = width / 2 - (sides ? p.panel : 0);
-    return { x0: -inner, x1: inner, y0: y0 + p.panel, y1, z: p.depth / 2 };
-  }
-  return { x0: -width / 2 + p.edge, x1: width / 2 - p.edge, y0: y0 + p.edge, y1: y1 - p.edge, z: p.depth / 2 };
+  return carcassField({
+    width, depth: p.depth, y0: p.legHeight, y1: p.height - p.topThickness, panel: p.panel, sides, construction: p.construction, edge: p.edge,
+  }).field;
 }
 
 export function frontOptions(p) {

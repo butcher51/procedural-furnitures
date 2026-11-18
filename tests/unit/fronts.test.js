@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { createRng } from '../../src/core/rng.js';
-import { buildCarcass, buildFronts, FRONT_DEFAULTS, frontPanel, handleSlots, planHandles, solveFronts } from '../../src/core/fronts.js';
+import { buildCarcass, buildFronts, carcassField, FRONT_DEFAULTS, frontPanel, handleContact, handleSlots, PANEL_SETBACK, panelFrameWidth, planHandles, solveFronts } from '../../src/core/fronts.js';
 import { buildHandle, handleTris, HANDLE_DEFAULTS, HANDLE_KINDS, normalizeHandle } from '../../src/core/handles.js';
 import { CABINET_STYLES, CABINET_TEMPLATES, cabinetCase, DESK_PLANS } from '../helpers/front-plans.js';
 
@@ -311,4 +311,82 @@ test('buildFronts: fronts, handles, members, shelves and backers in one call', (
   }
   const none = buildFronts(layout, { backers: false, members: false }, { kind: 'cutout' }, { front: mat });
   assert.equal(none.length, layout.fronts.length);
+});
+
+test('carcassField: field and opening without geometry, equal to buildCarcass', () => {
+  const overlay = carcassField({ width: 1.2, depth: 0.45, y0: 0.2, y1: 0.8, panel: 0.018, edge: 0.002 });
+  assert.deepEqual(overlay, { field: { x0: -0.598, x1: 0.598, y0: 0.202, y1: 0.798, z: 0.225 }, opening: { x0: -0.582, x1: 0.582, y0: 0.218, y1: 0.8 } });
+  const inset = carcassField({ width: 0.6, depth: 0.45, y0: 0.2, y1: 0.8, panel: 0.018, construction: 'inset', x: 0.3 });
+  assert.ok(near(inset.field.x0, 0.018) && near(inset.field.x1, 0.582) && near(inset.field.y0, 0.218) && near(inset.field.z, 0.225));
+  assert.deepEqual({ ...inset.field, z: undefined }, { ...inset.opening, z: undefined });
+  for (const construction of ['overlay', 'inset']) {
+    for (const [sides, bottom] of [[true, true], [false, true], [true, false], [false, false]]) {
+      const opts = { width: 0.9, depth: 0.5, y0: 0.12, y1: 0.7, panel: 0.02, construction, sides, bottom, edge: 0.003, x: -0.2 };
+      const built = buildCarcass(opts, mat);
+      assert.deepEqual(carcassField(opts), { field: built.field, opening: built.opening });
+    }
+  }
+});
+
+function surfaceUnder(panel, x, y, zFrom) {
+  const ray = new THREE.Raycaster(new THREE.Vector3(x, y, zFrom), new THREE.Vector3(0, 0, -1));
+  const hit = ray.intersectObject(panel, true)[0];
+  return hit ? hit.point.z : -Infinity;
+}
+
+test('buildFronts seats every handle kind on the surface under it on framed and insert fronts', () => {
+  const field = { x0: -0.7, x1: 0.7, y0: 0.1, y1: 0.8, z: 0.2 };
+  const plan = { split: 'x', weights: [1, 1.2], children: [{ leaf: 'doors' }, { leaf: 'drawers', count: 3 }] };
+  const layout = solveFronts(plan, field, { maxDrawerW: 1.0 });
+  const seen = { panel: 0, frame: 0 };
+  for (const style of ['framed', 'insert']) {
+    for (const [frameWidth, doorFrameWidth] of [[0.03, 0.03], [0.05, 0.07], [0.02, 0.1]]) {
+      for (const kind of ['knob', 'bar', 'cup', 'ring', 'tab', 'lip']) {
+        for (const doorKind of [null, kind]) {
+          const hardware = new THREE.MeshBasicMaterial();
+          const hw = { kind, doorKind };
+          const parts = buildFronts(layout, { thickness: 0.02, drawerStyle: style, doorStyle: style, frameWidth, doorFrameWidth }, hw, { front: mat, insert: mat, hardware });
+          const handles = parts.filter((p) => p.children.some((c) => c.material === hardware));
+          const slots = planHandles(layout, hw).filter((slot) => HANDLE_KINDS[slot.kind].part);
+          assert.equal(handles.length, slots.length);
+          handles.forEach((handle, i) => {
+            const f = layout.fronts[slots[i].front];
+            const panel = parts[slots[i].front];
+            panel.updateMatrixWorld(true);
+            handle.updateMatrixWorld(true);
+            const back = boxOf(handle).min.z;
+            const label = `${style} ${kind}/${doorKind} on ${f.kind} ${f.x0.toFixed(3)},${f.y0.toFixed(3)}`;
+            let top = -Infinity;
+            const v = new THREE.Vector3();
+            handle.traverse((o) => {
+              if (!o.isMesh) return;
+              const pos = o.geometry.attributes.position;
+              for (let k = 0; k < pos.count; k++) {
+                v.fromBufferAttribute(pos, k).applyMatrix4(o.matrixWorld);
+                if (v.z > back + 0.0005) continue;
+                const z = surfaceUnder(panel, v.x, v.y, f.z1 + 0.05);
+                assert.ok(z <= back + 0.0005, `${label}: back face ${back} inside the surface ${z}`);
+                top = Math.max(top, z);
+              }
+            });
+            assert.ok(top >= back - 0.0005, `${label}: back face ${back} floats above ${top}`);
+            seen[near(back, f.z1 - PANEL_SETBACK, 1e-6) ? 'panel' : 'frame']++;
+          });
+        }
+      }
+    }
+  }
+  assert.ok(seen.panel > 20 && seen.frame > 20, JSON.stringify(seen));
+});
+
+test('handleSlots: slab fronts keep the face plane, framed fronts recess handles that sit on the panel', () => {
+  const f = front('drawer', -0.3, 0.3, 0.4, 0.65);
+  assert.ok(near(handleSlots(f, { kind: 'knob' })[0].z, 0.2));
+  assert.ok(near(handleSlots(f, { kind: 'knob' }, { style: 'framed', frameWidth: 0.04 })[0].z, 0.2 - PANEL_SETBACK));
+  const door = front('door', -0.25, 0.25, 0.1, 0.7);
+  assert.ok(near(handleSlots(door, { kind: 'knob' }, { style: 'insert', frameWidth: 0.08 })[0].z, 0.2));
+  assert.ok(near(handleSlots(door, { kind: 'knob' }, { style: 'insert', frameWidth: 0.02 })[0].z, 0.2 - PANEL_SETBACK));
+  const c = handleContact({ kind: 'bar', x: 0, y: 0.5, axis: 'y', length: 0.128, size: 0.012 }, {});
+  assert.ok(near(c.y1 - c.y0, 0.128 - 0.0024) && near(c.x1 - c.x0, 0.0096));
+  assert.ok(near(panelFrameWidth(door, 0.2), 0.1) && near(panelFrameWidth(door, 0.001), 0.01));
 });
