@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { beam, boxProjectUVs, endPanelShape, extrudeProfile, latheSolid } from '../../src/core/geometry.js';
 import { splitSpan } from '../../src/core/layout.js';
-import { FRAME_COLORS, STONE_TONES, WOODS, hsl, pickWood, secondaryColor } from '../../src/core/color.js';
+import { FRAME_COLORS, STONE_TONES, WOODS, pickWood } from '../../src/core/color.js';
 import { createRng } from '../../src/core/rng.js';
 
 const mat = new THREE.MeshBasicMaterial();
@@ -139,14 +139,10 @@ test('boxProjectUVs: per-meter UVs on the dominant axis plane, converts indexed 
   assert.ok(near(span, 2));
 });
 
-test('palette constants: stone tones, frame colours, chair secondary formulas, pickWood draws 3', () => {
+test('palette constants: stone tones, frame colours, pickWood draws 3', () => {
   assert.deepEqual(STONE_TONES.map((t) => t.name), ['white marble', 'black marble', 'travertine', 'grey terrazzo']);
   for (const t of STONE_TONES) assert.ok(t.s <= 0.75 && t.l >= 0.15 && t.l <= 0.9);
   assert.deepEqual(FRAME_COLORS, { black: '#2a2a2c', white: '#efefea', metal: '#a7abb0' });
-  assert.equal(secondaryColor('light', 0.3), hsl(0.3, 0.4, 0.85));
-  assert.equal(secondaryColor('dark', 0.3), hsl(0.3, 0.5, 0.22));
-  assert.equal(secondaryColor('complement', 0.7), hsl(0.2, 0.55, 0.55));
-  assert.equal(secondaryColor('white', 0.3), '#f4f1ea');
   const r = createRng('wood'), ref = createRng('wood');
   const wood = pickWood(r);
   const tone = ref.pick(WOODS);

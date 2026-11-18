@@ -1,4 +1,4 @@
-export const GROUP_KEYS = { palette: 'C', shape: 'S' };
+import { canRoll, shortcutGroups } from '../core/item.js';
 
 const escapeHtml = (text) =>
   String(text).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -12,17 +12,19 @@ function renderValue(value) {
   return escapeHtml(value);
 }
 
-export function groupApplies(group, params) {
-  return group.rerollable !== false && group.appliesTo?.(params) !== false;
+function shortcutKeys(definition) {
+  const { c, s } = shortcutGroups(definition);
+  return { ...(s ? { [s]: 'S' } : {}), ...(c ? { [c]: 'C' } : {}) };
 }
 
-function rollControl(group, count) {
-  const key = GROUP_KEYS[group.id];
+function rollControl(group, count, key, applies = true) {
   const name = group.label.toLowerCase();
   const forwardTip = `Re-roll ${name}${key ? ` (${key})` : ''}`;
-  const forward = `<button type="button" class="roll" data-group="${escapeHtml(group.id)}" data-dir="1" title="${escapeHtml(
-    forwardTip
-  )}" aria-label="${escapeHtml(forwardTip)}">⟳</button>`;
+  const forward = applies
+    ? `<button type="button" class="roll" data-group="${escapeHtml(group.id)}" data-dir="1" title="${escapeHtml(
+        forwardTip
+      )}" aria-label="${escapeHtml(forwardTip)}">⟳</button>`
+    : '';
   if (!count) return forward;
   const backTip = `Step back${key ? ` (shift+${key})` : ''}`;
   return `<span class="rollctl"><button type="button" class="back" data-group="${escapeHtml(
@@ -83,6 +85,7 @@ export function createPanel({ root, onReroll, onReset, onCopyLink, onSolo, onTog
     meta.textContent = subtitle ? `· ${subtitle}` : '';
     sub.textContent = subtitle;
     const groups = new Map(definition.groups.map((g) => [g.id, g]));
+    const keys = shortcutKeys(definition);
     const { sections } = definition.describe(params);
     const key = `${definition.id}/${number}`;
     const sameItem = previous.key === key;
@@ -92,9 +95,10 @@ export function createPanel({ root, onReroll, onReset, onCopyLink, onSolo, onTog
       .map(({ group: groupId, rows }) => {
         const group = groups.get(groupId) ?? { id: groupId, label: groupId, rerollable: false };
         const count = rolls[groupId] ?? 0;
-        const applies = groupApplies(group, params);
-        const control = applies ? rollControl(group, count) : '';
-        if (applies) peekParts.push(`<span class="pr">${escapeHtml(group.label)}${rollControl(group, count)}</span>`);
+        const applies = groups.has(groupId) && canRoll(definition, groupId, params);
+        const shown = applies || (group.rerollable !== false && count > 0);
+        const control = shown ? rollControl(group, count, keys[groupId], applies) : '';
+        if (shown) peekParts.push(`<span class="pr">${escapeHtml(group.label)}${control}</span>`);
         const list = rows
           .map(([label, value], index) => {
             const html = renderValue(value);

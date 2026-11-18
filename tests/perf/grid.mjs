@@ -63,9 +63,10 @@ try {
     });
     await page.mouse.move(cx, cy);
     await page.mouse.down();
-    const steps = Math.round(Number(args.orbit) / 16);
-    for (let i = 0; i < steps; i++) {
+    const orbitStart = Date.now();
+    for (let i = 0; Date.now() - orbitStart < Number(args.orbit); i++) {
       await page.mouse.move(cx + Math.sin(i / 30) * 300, cy + Math.cos(i / 45) * 60);
+      await page.waitForTimeout(16);
     }
     await page.mouse.up();
     const frames = await page.evaluate(() => {
@@ -75,8 +76,10 @@ try {
     const sorted = [...frames].sort((a, b) => a - b);
     const avg = frames.reduce((a, b) => a + b, 0) / frames.length;
     const p95 = sorted[Math.floor(sorted.length * 0.95)];
-    const items = await page.evaluate(() => document.querySelectorAll('canvas').length);
-    rows.push({ type, 'build ms': buildMs, 'frame avg ms': +avg.toFixed(1), 'frame p95 ms': +p95.toFixed(1), frames: frames.length, errors: errors.length, ok: buildMs < 3000 && avg < 17 && !errors.length && items > 0 });
+    const label = await page.locator('#viewport canvas').getAttribute('aria-label');
+    const items = Number(/Grid of (\d+)/.exec(label ?? '')?.[1] ?? 0);
+    const expected = await page.evaluate(async (t) => (await import('/src/furniture/registry.js')).get(t).cell.gridSize ** 2, type);
+    rows.push({ type, 'build ms': buildMs, 'frame avg ms': +avg.toFixed(1), 'frame p95 ms': +p95.toFixed(1), items, frames: frames.length, errors: errors.length, ok: buildMs < 3000 && avg < 17 && !errors.length && items === expected });
     await page.close();
   }
 } finally {

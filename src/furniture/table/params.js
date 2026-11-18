@@ -1,13 +1,12 @@
 import { hsl, pickWood, STONE_TONES, FRAME_COLORS } from '../../core/color.js';
 import { paintColor, accentColor } from '../../core/palette.js';
 import { rollStyle, weightedPick } from '../../core/rng.js';
+import { clamp, lerp } from '../../core/math.js';
 
 export const STYLE_WEIGHTS = { dining: 0.3, coffee: 0.24, side: 0.16, cafe: 0.15, trestle: 0.15 };
 
 const at = (u) => ({ next: () => u });
-const lerp = ([a, b], u) => a + u * (b - a);
 const pickU = (u, weights) => weightedPick(at(u), weights);
-const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 const SHAPE_WEIGHTS = {
   dining: { rect: 0.45, round: 0.2, oval: 0.15, squircle: 0.2 },

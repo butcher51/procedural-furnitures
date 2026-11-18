@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createGroupedRng, createRng, rollStyle, weightedPick, weightedShuffle } from '../../src/core/rng.js';
-import { appliedGroups, groupApplies } from '../../src/core/item.js';
+import { canRoll, groupApplies, shortcutGroups } from '../../src/core/item.js';
 
 const STYLES = { bar: 0.25, counter: 0.2, diner: 0.15, milking: 0.15, drum: 0.15, slab: 0.1 };
 const ids = Object.keys(STYLES);
@@ -86,7 +86,7 @@ test('rollStyle is isolated from other groups and other groups from it', () => {
   assert.equal(rollStyle(createGroupedRng('solo', { style: 3 }), { only: 1 }), 'only');
 });
 
-test('groupApplies defaults to true and appliedGroups lists rerollable groups that apply', () => {
+test('groupApplies defaults to true; canRoll also requires a rerollable group', () => {
   const definition = {
     groups: [
       { id: 'style', fields: ['style'] },
@@ -98,6 +98,17 @@ test('groupApplies defaults to true and appliedGroups lists rerollable groups th
   assert.equal(groupApplies(definition, 'footrest', { style: 'drum' }), false);
   assert.equal(groupApplies(definition, 'footrest', { style: 'bar' }), true);
   assert.equal(groupApplies(definition, 'missing', {}), true);
-  assert.deepEqual(appliedGroups(definition, { style: 'drum' }), ['style']);
-  assert.deepEqual(appliedGroups(definition, { style: 'bar' }), ['style', 'footrest']);
+  assert.equal(canRoll(definition, 'footrest', { style: 'drum' }), false);
+  assert.equal(canRoll(definition, 'footrest', { style: 'bar' }), true);
+  assert.equal(canRoll(definition, 'legacy', {}), false);
+  assert.equal(canRoll(definition, 'missing', {}), false);
+});
+
+test('shortcutGroups maps C to palette and S to shape or the first form group', () => {
+  const g = (ids) => ({ groups: ids.map((id) => ({ id })) });
+  assert.deepEqual(shortcutGroups(g(['style', 'shape', 'palette', 'finish'])), { c: 'palette', s: 'shape' });
+  assert.deepEqual(shortcutGroups(g(['style', 'top', 'base', 'palette', 'finish'])), { c: 'palette', s: 'top' });
+  assert.deepEqual(shortcutGroups(g(['style', 'finish'])), { c: null, s: null });
+  const fixedPalette = { groups: [{ id: 'shape' }, { id: 'palette', rerollable: false }] };
+  assert.deepEqual(shortcutGroups(fixedPalette), { c: null, s: 'shape' });
 });

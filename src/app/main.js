@@ -5,7 +5,8 @@ import { createShowroom, rollKey } from './grid.js';
 import { createHelp } from './help.js';
 import { attachKeys } from './keys.js';
 import { screenshotName, stepIndex } from './nav.js';
-import { createPanel, groupApplies } from './panel.js';
+import { canRoll, shortcutGroups } from '../core/item.js';
+import { createPanel } from './panel.js';
 import { attachPicking } from './picking.js';
 import { createStage } from './scene.js';
 import { createSheet } from './sheet.js';
@@ -236,7 +237,8 @@ function reroll(groupId, delta) {
   if (!item || !stage) return;
   const definition = currentDefinition();
   const group = definition.groups.find((g) => g.id === groupId);
-  if (!group || !groupApplies(group, item.params)) return;
+  if (!group || group.rerollable === false) return;
+  if (delta > 0 && !canRoll(definition, groupId, item.params)) return;
   const rolls = { ...rollsFor(item.number) };
   const before = rolls[groupId] ?? 0;
   if (delta < 0 && before === 0) return;
@@ -379,6 +381,9 @@ function toggleSolo() {
 function stepSolo(delta) {
   const total = currentDefinition().cell.gridSize ** 2;
   state.item = ((((state.item ?? 1) - 1 + delta) % total) + total) % total + 1;
+  epoch++;
+  solo.cancel();
+  delete root.dataset.ready;
   replaceUrl();
   populateCurrent();
 }
@@ -478,7 +483,10 @@ attachKeys({
   type: (index) => types[index] && switchType(types[index].id),
   step,
   regenerate: () => setSeed(randomSeed()),
-  reroll: (groupId, delta) => reroll(groupId, delta),
+  shortcut(letter, delta) {
+    const groupId = shortcutGroups(currentDefinition())[letter];
+    if (groupId) reroll(groupId, delta);
+  },
   solo: toggleSolo,
   turntable: toggleTurntable,
   escape,

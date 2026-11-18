@@ -22,15 +22,6 @@ export const STONE_TONES = [
 
 export const FRAME_COLORS = { black: '#2a2a2c', white: '#efefea', metal: '#a7abb0' };
 
-export const SECONDARY_MODES = ['light', 'dark', 'complement', 'white'];
-
-export function secondaryColor(mode, hue) {
-  if (mode === 'light') return hsl(hue, 0.4, 0.85);
-  if (mode === 'dark') return hsl(hue, 0.5, 0.22);
-  if (mode === 'complement') return hsl((hue + 0.5) % 1, 0.55, 0.55);
-  return '#f4f1ea';
-}
-
 export const WOODS = [
   { name: 'oak', h: 0.09, s: 0.3, l: 0.58 },
   { name: 'walnut', h: 0.075, s: 0.24, l: 0.31 },

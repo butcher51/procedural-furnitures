@@ -1,6 +1,7 @@
 import { FRAME_COLORS, pickWood } from '../../core/color.js';
 import { HARMONY_MODES, accentColor, capSaturation, fabricColor, harmoniousSecondary, shade, swatch } from '../../core/palette.js';
 import { rollStyle, weightedPick } from '../../core/rng.js';
+import { clamp, lerp } from '../../core/math.js';
 
 export const STYLES = { sofa: 0.3, loveseat: 0.15, midcentury: 0.15, chaise: 0.15, sectional: 0.25 };
 
@@ -12,8 +13,6 @@ const SHAPE = {
   sectional: { width: [2.2, 2.55], depth: [0.88, 1.0], seat: [0.38, 0.45], backTop: [0.74, 0.88], arms: { track: 0.55, roll: 0.2, slope: 0, none: 0.25 }, frame: [0.14, 0.24], puff: [0.02, 0.05], rise: [0.16, 0.28] },
 };
 
-const lerp = ([a, b], t) => a + (b - a) * t;
-const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const rad = (deg) => (deg * Math.PI) / 180;
 const fixed = (t) => ({ next: () => t });
 const draws = (r, n) => Array.from({ length: n }, () => r.next());

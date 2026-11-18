@@ -1,13 +1,13 @@
 import { FRAME_COLORS, pickWood } from '../../core/color.js';
 import { HARMONY_MODES, capSaturation, fabricColor, harmoniousSecondary, paintColor, shade } from '../../core/palette.js';
 import { rollStyle, weightedPick } from '../../core/rng.js';
+import { clamp } from '../../core/math.js';
 
 export const STYLES = { park: 0.24, garden: 0.18, plank: 0.22, platform: 0.14, upholstered: 0.22 };
 
 export const MAX_OVERALL_X = 1.95;
 export const MAX_TOP = 0.93;
 
-const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 const NEUTRAL_SHAPE = {
   seatSlatCount: 0, slatGap: 0, slatWidth: 0, seatExponent: 10,

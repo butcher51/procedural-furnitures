@@ -1,6 +1,7 @@
 import { hsl, pickWood } from '../../core/color.js';
 import { capSaturation, fabricColor, harmoniousSecondary, HARMONY_MODES, paintColor, shade } from '../../core/palette.js';
 import { rollStyle, weightedPick } from '../../core/rng.js';
+import { clamp } from '../../core/math.js';
 
 export const STYLES = { bar: 0.25, counter: 0.2, diner: 0.15, milking: 0.15, drum: 0.15, slab: 0.1 };
 
@@ -72,7 +73,6 @@ export const FIELDS = {
   finish: FINISH_FIELDS,
 };
 
-const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
 
 function seatOutline(r, shape, width, rectDepth) {
   const depth =

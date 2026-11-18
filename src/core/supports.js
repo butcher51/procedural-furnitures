@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { beam, puffy, roundedDiscGeometry, strut, tube } from './geometry.js';
 
+// Leg top positions (x, z) under a footprint. 3+ legs are spread on a
+// superellipse so rectangular footprints push legs towards the corners.
 export function legAnchors(p, fp) {
   if (fp.anchors) return fp.anchors;
   const n = p.legCount;
@@ -41,6 +43,7 @@ export function buildLegs(p, mats, fp) {
     return group;
   }
 
+  // 2 legs: side legs standing on floor runners (sled style)
   if (p.legCount === 2) {
     const runnerH = p.legThickness * 0.8;
     for (const sx of [-1, 1]) {

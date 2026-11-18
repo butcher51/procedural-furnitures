@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { hsl, pickWood, WOODS, WOOD_TONES, secondaryColor } from '../../src/core/color.js';
+import { hsl, pickWood, WOODS, WOOD_TONES } from '../../src/core/color.js';
 import { createRng } from '../../src/core/rng.js';
 import {
   accentColor,
@@ -123,6 +123,4 @@ test('WOODS keep the WOOD_TONES names and order, are calmer, and pickWood draws 
 
 test('frozen chair colour helpers are unchanged', () => {
   assert.deepEqual(WOOD_TONES[2], { name: 'cherry', h: 0.03, s: 0.5, l: 0.4 });
-  assert.equal(secondaryColor('complement', 0.3), hsl(0.8, 0.55, 0.55));
-  assert.equal(secondaryColor('white', 0.3), '#f4f1ea');
 });

@@ -35,7 +35,7 @@ export function attachKeys(handlers) {
     }
 
     if (key === 'arrowleft' || key === 'arrowright' || key === 'arrowup' || key === 'arrowdown') {
-      if (inChips) return;
+      if (inChips || target.closest?.('[role="menu"]')) return;
       e.preventDefault();
       handlers.step(e.key);
       return;
@@ -47,10 +47,8 @@ export function attachKeys(handlers) {
         handlers.regenerate();
         break;
       case 'c':
-        handlers.reroll('palette', dir);
-        break;
       case 's':
-        handlers.reroll('shape', dir);
+        handlers.shortcut(key, dir);
         break;
       case 'enter':
         if (onButton) return;

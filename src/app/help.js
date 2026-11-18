@@ -4,7 +4,7 @@ const ROWS = [
   ['← / →', 'Previous / next item'],
   ['↑ / ↓', 'Row back / forward'],
   ['C / ⇧C', 'Re-roll / step back colours'],
-  ['S / ⇧S', 'Re-roll / step back shape'],
+  ['S / ⇧S', 'Re-roll / step back shape (table: top)'],
   ['Enter', 'Solo on / off'],
   ['Space', 'Pause turntable (solo)'],
   ['Esc', 'Back one level'],

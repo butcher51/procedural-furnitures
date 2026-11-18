@@ -12,14 +12,14 @@ Source of truth for architecture: `plan/02-architecture.md`. This skill is the c
 | Path | Contents |
 |---|---|
 | `src/core/rng.js` | `hashString`, `mulberry32`, `createRng`, `createGroupedRng`, `weightedPick`, `weightedShuffle`, `rollStyle` |
-| `src/core/color.js` | `hsl`, `WOOD_TONES` (chair, frozen), `WOODS`, `STONE_TONES`, `FRAME_COLORS`, `SECONDARY_MODES`, `secondaryColor` (chair, frozen), `pickWood` |
+| `src/core/color.js` | `hsl`, `WOOD_TONES` (chair, frozen), `WOODS`, `STONE_TONES`, `FRAME_COLORS`, `pickWood` |
 | `src/core/palette.js` | `oklch`, `chromaLimit`, `CHROMA_LIMITS`, `colourIsCalm`, `capSaturation`, `muted`, `LIGHTNESS_BOUNDS`, `fabricColor`, `FABRIC_MOODS`, `fabricHue`, `paintColor`, `PAINTS`, `accentColor`, `harmoniousSecondary`, `HARMONY_MODES`, `shade`, `swatch`, `hexToHsl` |
 | `src/core/geometry.js` | `edgeRadius`, `puffy`, `strut`, `tube`, `roundedDiscGeometry`, `extrudeUp`, `superellipseShape`, `bendZ`, `bentBandGeometry`, `normalizeUVs`, `beam`, `extrudeProfile`, `endPanelShape`, `latheSolid`, `boxProjectUVs` |
 | `src/core/layout.js` | `splitSpan` |
 | `src/core/supports.js` | `legAnchors`, `rowAnchors`, `buildLegs`, `legLines`, `pointOnLeg`, `LEG_PROFILES`, `bentwoodFoot`, `buildCurvyLegs`, `buildStretchers`, `buildApron`, `buildPedestal`, `buildTrestle` |
 | `src/core/materials.js` | `createMaterials({ textureFactory })`, `canvasPatternTexture`, ref-counted pattern texture cache |
 | `src/core/merge.js` | `groupParts`, `mergeByMaterial`, `disposeObject` |
-| `src/core/item.js` | `itemSeed`, `generateItem(def, sceneSeed, n, rerolls, dna)`, `buildItem(def, params, kit)`, `rerollableGroups`, `fixedGroups`, `groupApplies(def, groupId, params)`, `appliedGroups(def, params)` |
+| `src/core/item.js` | `itemSeed`, `generateItem(def, sceneSeed, n, rerolls, dna)`, `buildItem(def, params, kit)`, `rerollableGroups`, `fixedGroups`, `groupApplies(def, groupId, params)`, `canRoll(def, groupId, params)`, `shortcutGroups(def)` (C/S key targets) |
 | `src/core/kit.js` | `createKit({ textureFactory })` → `{ materials }` |
 | `src/furniture/registry.js` | `register`, `get`, `has`, `list`; one import + `register()` line per type |
 | `src/furniture/chair/` | Reference plugin: `index.js` (definition), `params.js`, `build.js` |
@@ -68,7 +68,7 @@ export default {
 |---|---|
 | `styles` | Style id → roll weight. Tests check the observed distribution (±4 pp over 2,000 seeds). Modern types roll it with `const style = rollStyle(g, definition.styles)` and keep the `style` group rerollable (R1). The chair stays `rerollable: false`. |
 | `cell` | Grid spacing (m) and grid size. Item x/z extent must be < `spacing − 0.1`. |
-| `groups` | Groups in roll order. `fields`: the params the group owns (re-roll tests check isolation with it). `reads`: earlier groups whose results it uses. `rerollable: false` hides the ⟳ button and ignores rerolls. A group may read earlier groups, never later ones. `appliesTo(params) → boolean` is optional (R2): pure, reads only the final params, never affects generation. When it returns false the panel hides that group's ⟳ (rows still show), and the re-roll test skips the change rate for that seed but requires that a re-roll changes no field outside the group's own `fields`. If earlier groups decide that the group does not apply, give its fields neutral values (`0`, `false`, `null`, `'none'`). Call it through `groupApplies(def, id, params)` / `appliedGroups(def, params)` from `item.js`. |
+| `groups` | Groups in roll order. `fields`: the params the group owns (re-roll tests check isolation with it). `reads`: earlier groups whose results it uses. `rerollable: false` hides the ⟳ button and ignores rerolls. A group may read earlier groups, never later ones. `appliesTo(params) → boolean` is optional (R2): pure, reads only the final params, never affects generation. When it returns false the panel hides that group's ⟳ (rows still show), and the re-roll test skips the change rate for that seed but requires that a re-roll changes no field outside the group's own `fields`. If earlier groups decide that the group does not apply, give its fields neutral values (`0`, `false`, `null`, `'none'`). Call it through `groupApplies(def, id, params)`, or `canRoll(def, id, params)` (also requires `rerollable !== false`) from `item.js`. Steps back stay possible after a group stops applying. |
 | `plural` | Loader text ("Generating tables…"). Defaults to `label + 's'`. |
 | `itemSeed`, `legacyRng` | Chair only, for old links. New types omit both. |
 | `generateParams(g, dna)` | Pure. All randomness via `g.roll(groupId, (r) => …)`. Returns JSON-serialisable data incl. `seed`, `type`, `style`. |
@@ -103,7 +103,6 @@ export default {
 | `pickWood(r)` (color) | `{ name, h, s, l }` from `WOODS` with h ± 0.01 and l ± 0.05 | Exactly 3 draws (pick, h, l). Draw it even when unused so the stream stays stable. |
 | `STONE_TONES` (color) | `{ name, h, s, l }` × 4: white marble, black marble, travertine, grey terrazzo | Jitter l ±0.03. |
 | `FRAME_COLORS` (color) | `{ black, white, metal }` hexes | The chair's frame hexes; don't invent new near-blacks. |
-| `secondaryColor(mode, hue)` (color) | Hex for each of `SECONDARY_MODES` (`light`, `dark`, `complement`, `white`) | Chair only, frozen (its `complement` is a fixed s 0.55 / l 0.55 and goes neon). New types use `harmoniousSecondary`. |
 | `colourIsCalm(hex)` (palette) | `true` when OKLCH chroma ≤ `chromaLimit(hue)` | The enforced rubric: `tests/unit/colour-calm.test.js` checks every `#rrggbb` string in params and every material colour over 500 seeds per type. |
 | `capSaturation(h, s, l)` / `muted(h, s, l)` (palette) | Swatch `{ h, s, l, hex }` / its hex, with l clamped to `LIGHTNESS_BOUNDS` [0.18, 0.9] and s lowered (binary search) until chroma ≤ 0.92 × limit | Hue-aware: green/cyan/blue/violet lose far more saturation than earth/rose. Never raises s. Use it for any derived colour you compute yourself. |
 | `fabricColor(r, { mood = 'muted' })` (palette) | Calm fabric swatch; moods `neutral` / `muted` / `bold` (`FABRIC_MOODS`) | Exactly 3 draws (hue, s, l). Hue goes through `fabricHue`, which under-weights green and magenta. |
@@ -153,7 +152,7 @@ Create a fresh material per item per role (merge groups by material identity). P
 
 ### Colour
 
-**Rule: new types must draw every colour via these pickers**: `fabricColor`, `paintColor`, `accentColor`, `harmoniousSecondary`, `shade` / `capSaturation` (`src/core/palette.js`), `pickWood` + `WOODS`, `STONE_TONES`, `FRAME_COLORS`. No `hsl(hue, r.range(…), …)` on a free hue, no `secondaryColor`, no `WOOD_TONES` (chair only). Store swatches as hex strings in params; keep `{ h, s, l }` only where a later group needs it.
+**Rule: new types must draw every colour via these pickers**: `fabricColor`, `paintColor`, `accentColor`, `harmoniousSecondary`, `shade` / `capSaturation` (`src/core/palette.js`), `pickWood` + `WOODS`, `STONE_TONES`, `FRAME_COLORS`. No `hsl(hue, r.range(…), …)` on a free hue, no `WOOD_TONES` (chair only). Store swatches as hex strings in params; keep `{ h, s, l }` only where a later group needs it.
 
 - `colourIsCalm` thresholds (OKLCH chroma limit, linear between hue anchors in degrees): 0° 0.10 · 30° 0.105 · 60° 0.12 · 85° 0.115 · 105° 0.08 · 130° 0.07 · 160° 0.07 · 195° 0.075 · 230° 0.075 · 265° 0.075 · 290° 0.07 · 330° 0.08 · 360° 0.10. Greys, blacks, whites, `WOODS` and `STONE_TONES` pass; brass at `hsl(0.11, 0.55, 0.5)` fails narrowly, so draw brass through `capSaturation(0.11, s, l)`; review neons (lime, kelly green, cyan, royal blue, electric violet, magenta, hot pink) fail.
 - The calm test covers every `#rrggbb` string in params, including colours a seed rolls but does not use, so unused fields must come from the pickers too.

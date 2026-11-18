@@ -1,9 +1,8 @@
 import { hsl } from './color.js';
 import { weightedPick } from './rng.js';
+import { clamp, lerp } from './math.js';
 
-const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const wrap = (h) => ((h % 1) + 1) % 1;
-const lerp = ([a, b], t) => a + (b - a) * t;
 
 export const LIGHTNESS_BOUNDS = [0.18, 0.9];
 
