@@ -6,6 +6,7 @@ import sofa from './sofa/index.js';
 import shelf from './shelf/index.js';
 import cabinet from './cabinet/index.js';
 import desk from './desk/index.js';
+import bed from './bed/index.js';
 
 const definitions = new Map();
 
@@ -36,3 +37,4 @@ register(sofa);
 register(shelf);
 register(cabinet);
 register(desk);
+register(bed);
