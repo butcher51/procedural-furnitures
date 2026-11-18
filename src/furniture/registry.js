@@ -2,6 +2,7 @@ import chair from './chair/index.js';
 import stool from './stool/index.js';
 import table from './table/index.js';
 import bench from './bench/index.js';
+import sofa from './sofa/index.js';
 
 const definitions = new Map();
 
@@ -28,3 +29,4 @@ register(chair);
 register(stool);
 register(table);
 register(bench);
+register(sofa);
