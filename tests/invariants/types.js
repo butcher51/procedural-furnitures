@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import * as cabinetChecks from './cabinet-checks.js';
+import { frontRegions } from '../../src/furniture/desk/layout.js';
 
 const CENTRED_TOLERANCE = 0.002;
 const ABOVE_SEAT = 0.02;
@@ -273,4 +274,67 @@ function shelfLeaningRearContact({ params, partMeshes, box }) {
 TYPE_RULES.shelf = {
   maxSize: { width: 1.65, height: 2.1, depth: 0.62 },
   checks: [shelfCentred, shelfHeightInRange, shelfGaps, shelfBackBehind, shelfLeaningRearContact],
+};
+
+const DESK_HEIGHT_WINDOW = { sit: [0.72, 0.76], stand: [1.0, 1.18] };
+
+const isDecorMesh = (mesh) => mesh.material?.userData?.role === 'decor';
+const deskTop = (partMeshes) => partMeshes.find((mesh) => mesh.name === 'top');
+const meshBox = (mesh) => new THREE.Box3().setFromObject(mesh, true);
+
+function deskTopAtHeight({ params, partMeshes }) {
+  const top = deskTop(partMeshes);
+  if (!top) return ['top at height: no mesh named "top"'];
+  const failures = [];
+  const max = meshBox(top).max.y;
+  if (Math.abs(max - params.topHeight) > 0.003) failures.push(`top at height: top surface ${max.toFixed(3)} differs from topHeight ${params.topHeight.toFixed(3)}`);
+  const [lo, hi] = DESK_HEIGHT_WINDOW[params.heightMode];
+  if (params.topHeight < lo - 1e-9 || params.topHeight > hi + 1e-9) failures.push(`top at height: ${params.heightMode} topHeight ${params.topHeight.toFixed(3)} outside [${lo}, ${hi}]`);
+  return failures;
+}
+
+function deskBaseUnderTop({ params, partMeshes }) {
+  const top = deskTop(partMeshes);
+  if (!top) return [];
+  const box = meshBox(top).expandByScalar(0.002);
+  for (const mesh of partMeshes) {
+    if (mesh === top || isDecorMesh(mesh)) continue;
+    const b = meshBox(mesh);
+    if (b.min.x < box.min.x || b.max.x > box.max.x || b.min.z < box.min.z || b.max.z > box.max.z) {
+      const over = Math.max(box.min.x - b.min.x, b.max.x - box.max.x, box.min.z - b.min.z, b.max.z - box.max.z);
+      return [`base under top: a ${params.style} part sticks out of the top plan by ${(over * 1000).toFixed(1)} mm`];
+    }
+  }
+  return [];
+}
+
+function deskKneeClearance({ params, partMeshes }) {
+  const top = deskTop(partMeshes);
+  const yMax = params.heightMode === 'stand' ? params.topHeight - 0.14 : 0.6;
+  const zFront = params.topDepth / 2;
+  const knee = new THREE.Box3(
+    new THREE.Vector3(params.kneeCenterX - 0.3, 0.22, zFront - 0.45),
+    new THREE.Vector3(params.kneeCenterX + 0.3, yMax, zFront)
+  );
+  if (params.kneeWidth < 0.62 - 1e-9) return [`knee clearance: knee width ${params.kneeWidth.toFixed(3)} m < 0.62 m`];
+  for (const mesh of partMeshes) {
+    if (mesh === top) continue;
+    const b = meshBox(mesh);
+    const overlap = (axis) => Math.min(b.max[axis], knee.max[axis]) - Math.max(b.min[axis], knee.min[axis]);
+    if (overlap('x') > 0.001 && overlap('y') > 0.001 && overlap('z') > 0.001) {
+      return [`knee clearance: a part occupies the knee space (x ${b.min.x.toFixed(3)}..${b.max.x.toFixed(3)}, y ${b.min.y.toFixed(3)}..${b.max.y.toFixed(3)}, z ${b.min.z.toFixed(3)}..${b.max.z.toFixed(3)})`];
+    }
+  }
+  return [];
+}
+
+function deskFrontsFacePlusZ({ params }) {
+  return frontRegions(params).flatMap((region) => region.layout.fronts
+    .filter((front) => !(front.z1 > front.z0 && front.z1 > 0))
+    .map((front) => `fronts face +z: ${region.id} front ${front.index} spans z ${front.z0.toFixed(3)}..${front.z1.toFixed(3)}`));
+}
+
+TYPE_RULES.desk = {
+  maxSize: { width: 1.8, height: 1.4, depth: 0.82 },
+  checks: [centredInX, deskTopAtHeight, deskBaseUnderTop, deskKneeClearance, deskFrontsFacePlusZ],
 };
