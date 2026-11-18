@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { DRAPE_TRI_CAP, drapeSheet, pillow, pillowTriangles } from '../../src/core/soft.js';
+import { signedClearance } from '../helpers/sheet-clearance.js';
 
 const mat = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
 const tris = (geo) => geo.attributes.position.count / 3;
@@ -189,6 +190,49 @@ test('drapeSheet: fold layer and runner throw lie above the main sheet', () => {
     }
     assert.ok(outside > 4);
   }
+});
+
+test('drapeSheet over: runner clears the duvet by ≥ 1 mm everywhere (sizes × drape/tuck/taper × full/low)', () => {
+  for (const W of MATTRESSES) {
+    for (const [mode, sides] of Object.entries(MODES)) {
+      for (const res of ['full', 'low']) {
+        const duvet = { ...base(W, { ...sides, res }), fold: null };
+        const under = drapeSheet(duvet);
+        const cols = res === 'full' ? 16 : 12;
+        const rows = (tris(under.main) - 4 * cols) / (2 * cols + 4);
+        assert.ok(Number.isInteger(rows), `${W} ${mode} ${res}: ${rows} rows`);
+        for (const depth of [0.35, 0.6]) {
+          const limit = { x: W / 2 + 0.012, z: duvet.zEnd + 0.012 };
+          const extraDrop = mode === 'tuck' ? 0 : 0.04;
+          const runner = drapeSheet({ over: duvet, zStart: duvet.zEnd - depth, thickness: 0.02, extraDrop, wrinkle: 0.005, seed: 3, limit });
+          assert.ok(tris(runner.main) <= 400, `${W} ${mode} ${res}: runner ${tris(runner.main)} tris`);
+          const rp = runner.main.attributes.position;
+          let worst = Infinity;
+          for (let i = 0; i < rp.count; i++) {
+            const v = new THREE.Vector3().fromBufferAttribute(rp, i);
+            worst = Math.min(worst, signedClearance(under.main, rows * cols * 2, v));
+            if (mode !== 'drape') assert.ok(v.z <= limit.z + 1e-6, `${W} ${mode} ${res}: runner z ${v.z} past the foot limit`);
+            if (mode === 'tuck') assert.ok(Math.abs(v.x - duvet.x0) <= limit.x + 1e-6, `${W} tuck ${res}: runner x ${v.x} past the side limit`);
+          }
+          assert.ok(worst >= 0.001, `${W} ${mode} ${res} depth ${depth}: runner vertex ${worst.toFixed(4)} m from the duvet`);
+        }
+      }
+    }
+  }
+});
+
+test('drapeSheet: drape corners are rounded in plan', () => {
+  const o = { ...base(1.6, MODES.drape), wrinkle: 0, flare: 0, cornerSag: 0, fold: null };
+  const sheet = drapeSheet(o);
+  const p = sheet.main.attributes.position;
+  const cx = o.x0 + o.width / 2 - o.radius, cz = o.zEnd - o.radius;
+  let maxR = 0, maxSide = 0;
+  for (let i = 0; i < p.count; i++) {
+    const dx = p.getX(i) - cx, dz = p.getZ(i) - cz;
+    if (dx > 0 && dz > 0) maxR = Math.max(maxR, Math.hypot(dx, dz));
+    maxSide = Math.max(maxSide, dx, dz);
+  }
+  assert.ok(maxR <= maxSide + 1e-6, `corner reaches ${maxR} > side ${maxSide}`);
 });
 
 test('drapeSheet: deterministic, wrinkle hashed from the seed', () => {

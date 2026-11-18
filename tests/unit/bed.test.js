@@ -8,6 +8,8 @@ import bed from '../../src/furniture/bed/index.js';
 import { archTopShape, buildLadder, scallopShape } from '../../src/furniture/bed/build.js';
 import { planPillows } from '../../src/furniture/bed/layout.js';
 import { bedPillowPlan } from '../../src/furniture/bed/params.js';
+import { hexToHsl } from '../../src/core/palette.js';
+import { worstClearance } from '../helpers/sheet-clearance.js';
 
 const SEEDS = 2000;
 const items = Array.from({ length: SEEDS }, (_, i) => generateItem(bed, 'bed-unit', i + 1));
@@ -190,6 +192,25 @@ test('bed: triangle and draw-call budgets over 500 seeds, bunk stays under 1.80 
     disposeObject(object);
   }
   assert.ok(Object.values(worst).every((v) => v <= 5600), JSON.stringify(worst));
+});
+
+test('bed: runner clears the duvet by ≥ 1 mm, accent stays near the duvet hue', () => {
+  const kit = createKit();
+  const runners = items.filter((p) => p.throwKind === 'runner').slice(0, 40);
+  assert.ok(runners.some((p) => p.duvetFit === 'tuck') && runners.some((p) => p.footFit === 'drape'));
+  for (const p of runners) {
+    const parts = bed.build(p, kit);
+    const duvet = parts.find((o) => o.name === 'duvet');
+    const runner = parts.find((o) => o.name === 'throw');
+    const cols = p.duvetRes === 'full' ? 16 : 12;
+    const worst = worstClearance(duvet.geometry, cols, runner.geometry);
+    assert.ok(worst >= 0.001, `${p.seed}: runner ${worst.toFixed(4)} m from the duvet`);
+  }
+  for (const p of items.slice(0, 500)) {
+    const d = Math.abs(((hexToHsl(p.accent).h - hexToHsl(p.duvetColor).h + 1.5) % 1) - 0.5);
+    const s = Math.min(hexToHsl(p.accent).s, hexToHsl(p.duvetColor).s);
+    assert.ok(d <= 0.12 || s < 0.06, `${p.seed}: accent hue ${d.toFixed(3)} from the duvet`);
+  }
 });
 
 test('bed: build is deterministic', () => {

@@ -396,11 +396,12 @@ function bedDuvetClear({ params, partMeshes }) {
   const x1 = Math.max(...mattress.map((b) => b.max.x)) + 0.001;
   for (const mesh of [...bedMeshes(partMeshes, 'duvet'), ...(params.throwKind === 'runner' ? bedMeshes(partMeshes, 'throw') : [])]) {
     const b = bedBox(mesh);
+    const slack = mesh.name === 'throw' ? params.clearance : 0;
     if ((params.duvetFit === 'drape' || params.footFit === 'drape') && b.min.y < params.drapeFloor - 0.001) {
       failures.push(`duvetClear: ${mesh.name} reaches y ${b.min.y.toFixed(3)} below the drape floor ${params.drapeFloor.toFixed(3)}`);
     }
-    if (params.duvetFit === 'tuck' && (b.min.x < x0 || b.max.x > x1)) failures.push(`duvetClear: tucked ${mesh.name} sticks out of the mattress sides`);
-    if (params.footFit === 'tuck' && b.max.z > foot + 0.001) failures.push(`duvetClear: tucked ${mesh.name} sticks out past the mattress foot`);
+    if (params.duvetFit === 'tuck' && (b.min.x < x0 - slack || b.max.x > x1 + slack)) failures.push(`duvetClear: tucked ${mesh.name} sticks out of the mattress sides`);
+    if (params.footFit === 'tuck' && b.max.z > foot + slack + 0.001) failures.push(`duvetClear: tucked ${mesh.name} sticks out past the mattress foot`);
   }
   return failures;
 }
