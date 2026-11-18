@@ -27,6 +27,10 @@ M0–M3 done. ★ Wave 1 approved (PR #8). Decisions at the gate:
 - **Sofa:** pillow on L sectionals placed at the seat/return junction; chaise pillow edge-on and sinking into the cushion; pillows taller than a low back; bare back frame towering on armless pieces; faceted roll arms; boxy loveseat #38.
 - **Chair:** original palette is louder than the other types (kept on purpose for link stability).
 - **Patterns (from `reviews/patterns-2.md`):** speckle fades over the far half of long bench tops; pinstripe-like wood remains on some wide tops (table #5 right half, stool #13); a few dark tops still show little grain; very high-contrast dark mahogany (stool #7); faint dotted seam on white bench slats; loud dot/ground pairs (bench #11, All Stool 9); phone overview grid small with empty space above.
+- **Shelf (wave 2, `reviews/shelf-2.md`):** loud painted-frame accent backs (#32, fresh2 #9, #24); all-ochre tonal books (#35); sparse bays with tiny orbs; narrow 1-bay bookcases without a back read as columns; bold grain on leaning crate bases; pale narrow leaning units fade.
+- **Cabinet (wave 2, `reviews/cabinet-2.md`):** knobs still look lumpy; centred knob on short nightstand doors reads low; lip/brass on cream (#19); black-on-black fronts lose detail; wood-on-wood hardware invisible; fully open TV4/NS4 read as shelves; bold grain on thick industrial tops; thick painted tops on low TVs read as benches.
+- **Desk (wave 2, `reviews/desk-2.md`):** dark near-match ring pulls faint on dark wood; inlay can still read as a runner beside a riser (fresh2 #17); drawer-less panel desks read as tables/benches.
+- **Bed (wave 2, `reviews/bed-2.md`):** upper bunk casts a hard shadow slab on the backdrop; four-poster head-post shadow band across bedding; all-pale beds fade on the floor; busy duvet/upholstery hue pairs; some pale four-posters remain.
 
 ## M0 — Bootstrap
 
