@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { weightedPick } from './rng.js';
 
 export function hsl(h, s, l) {
   return '#' + new THREE.Color().setHSL(h, s, l, THREE.SRGBColorSpace).getHexString();
@@ -31,9 +32,24 @@ export const WOODS = [
   { name: 'mahogany', h: 0.04, s: 0.3, l: 0.28 },
 ];
 
-export function pickWood(r) {
-  const wood = r.pick(WOODS);
+export function pickWood(r, { weights } = {}) {
+  const wood = weights ? weightedPick(r, WOODS.map((w) => [w, weights[w.name] ?? 0])) : r.pick(WOODS);
   const h = wood.h + r.range(-0.01, 0.01);
   const l = wood.l + r.range(-0.05, 0.05);
   return { name: wood.name, h, s: wood.s, l };
+}
+
+export const LEATHERS = [
+  { name: 'tan', h: 0.085, s: 0.42, l: 0.5 },
+  { name: 'cognac', h: 0.06, s: 0.5, l: 0.38 },
+  { name: 'chocolate', h: 0.055, s: 0.32, l: 0.24 },
+  { name: 'oxblood', h: 0.995, s: 0.4, l: 0.26 },
+  { name: 'bottle green', h: 0.4, s: 0.28, l: 0.24 },
+];
+
+export function pickLeather(r) {
+  const leather = r.pick(LEATHERS);
+  const h = (leather.h + r.range(-0.01, 0.01) + 1) % 1;
+  const l = leather.l + r.range(-0.03, 0.03);
+  return { name: leather.name, h, s: leather.s, l, hex: hsl(h, leather.s, l) };
 }

@@ -3,9 +3,8 @@ import {
   beam, boxProjectUVs, endPanelShape, extrudeProfile, extrudeUp, normalizeUVs, puffy, strut, superellipseShape,
 } from '../../core/geometry.js';
 import { splitSpan } from '../../core/layout.js';
-import { buildApron, buildLegs, buildStretchers, buildTrestle, legLines, rowAnchors } from '../../core/supports.js';
+import { buildApron, buildFramedPanel, buildLegs, buildStretchers, buildTrestle, legLines, rowAnchors } from '../../core/supports.js';
 import { grainAlong } from '../../core/patterns.js';
-import { buildFramedBack } from './framedBack.js';
 import { strokeShape } from './strokes.js';
 
 const v3 = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -122,13 +121,16 @@ export function buildGarden(p, mats) {
 
   const angle = rad(p.backAngle);
   const pivotZ = -D / 2 + t / 2;
-  const back = buildFramedBack(
-    {
-      width: L, height: p.backHeight, thickness: p.backThickness, postWidth: t, postDepth: t,
-      style: p.backStyle, count: p.backBarCount, puff: p.puff,
+  const railH = Math.max(Math.min(p.backHeight * 0.16, 0.06), 0.035);
+  const rail = { height: railH, thickness: p.backThickness * 1.2 };
+  const back = buildFramedPanel({
+    width: L, postWidth: t, postDepth: t, postBottom: -0.02, postTop: p.backHeight, puff: p.puff,
+    rails: [{ ...rail, y: p.backHeight - railH / 2 }, { ...rail, y: railH / 2 + 0.03 }],
+    fill: {
+      kind: p.backStyle === 'slats' ? 'slats' : 'bars', count: p.backBarCount,
+      from: railH + 0.03 - 0.002, to: p.backHeight - railH + 0.002, thickness: p.backThickness,
     },
-    mats
-  );
+  }, { frame: mats.frame, fill: mats.surface });
   back.position.set(0, H, pivotZ);
   back.rotation.x = -angle;
   parts.push(back);

@@ -2,13 +2,11 @@ import * as THREE from 'three';
 import { grainAlong } from '../../core/patterns.js';
 import { shade, swatch } from '../../core/palette.js';
 import {
-  beam, extrudeUp, latheSolid, normalizeUVs, puffy, roundedDiscGeometry, superellipseShape,
+  extrudeUp, normalizeUVs, puffy, roundedDiscGeometry, superellipseShape,
 } from '../../core/geometry.js';
 import {
-  buildApron, buildLegs, buildPedestal, buildStretchers, buildTrestle, legLines, pointOnLeg,
+  buildApron, buildLegs, buildPedestal, buildStretchers, buildTrestle, legLines, pointOnLeg, turnedPost,
 } from '../../core/supports.js';
-
-const v3 = (x, y, z) => new THREE.Vector3(x, y, z);
 
 function slabGeometry(shape, thickness, edge, length, depth, exponent, sides) {
   if (shape === 'round') return roundedDiscGeometry(length / 2, thickness, edge, sides);
@@ -27,22 +25,6 @@ function buildTop(p, mats) {
   const mesh = new THREE.Mesh(geo, mats.top);
   mesh.position.y = p.topShape === 'round' ? p.topHeight - p.topThickness / 2 : p.legHeight;
   return grainAlong(mesh, 'x');
-}
-
-function turnedLeg(x, z, height, thickness, blockHeight, mat) {
-  const group = new THREE.Group();
-  const block = Math.min(blockHeight, height * 0.4);
-  const h = height - block;
-  const R = (thickness / 2) * 0.95;
-  const profile = [
-    [0.7 * R, 0], [0.8 * R, 0.03 * h], [0.55 * R, 0.12 * h], [0.5 * R, 0.5 * h], [0.8 * R, 0.62 * h],
-    [0.55 * R, 0.72 * h], [0.9 * R, 0.8 * h], [0.9 * R, 0.9 * h], [R, h],
-  ];
-  const lathe = new THREE.Mesh(latheSolid(profile, 8), mat);
-  lathe.position.set(x, 0, z);
-  group.add(lathe);
-  group.add(beam(v3(x, h, z), v3(x, height, z), thickness, thickness, Math.min(0.006, thickness * 0.2), mat));
-  return grainAlong(group, 'y');
 }
 
 function buildShelf(p, mats, lines) {
@@ -81,8 +63,13 @@ function buildLegged(p, mats) {
   const fp = { width: p.topLength - 2 * p.overhang, depth: p.topDepth - 2 * p.overhang, top: p.legHeight, exponent: p.topExponent };
   const lines = legLines(legParams, fp);
   if (p.legProfile === 'turned') {
-    const block = Math.max(p.apronHeight, 0.07);
-    for (const line of lines) parts.push(turnedLeg(line.top.x, line.top.z, p.legHeight, p.legThickness, block, mats.frame));
+    const block = Math.min(Math.max(p.apronHeight, 0.07), p.legHeight * 0.4);
+    const blocks = [[p.legHeight - block, p.legHeight]];
+    for (const line of lines) {
+      const post = turnedPost({ height: p.legHeight, thickness: p.legThickness, blocks }, mats.frame);
+      post.position.set(line.top.x, 0, line.top.z);
+      parts.push(post);
+    }
   } else {
     parts.push(buildLegs(legParams, mats, fp));
   }
