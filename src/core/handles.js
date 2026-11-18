@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { beam, extrudeProfile, latheSolid, strut, tube } from './geometry.js';
 
 export const HANDLE_KINDS = {
-  knob: { tris: 96, part: true },
+  knob: { tris: 140, part: true },
   bar: { tris: 72, squareTris: 132, part: true },
   cup: { tris: 92, part: true },
   ring: { tris: 128, part: true },
@@ -64,7 +64,7 @@ const v3 = (x, y, z) => new THREE.Vector3(x, y, z);
 
 function knob(diameter, projection, mat) {
   const d = diameter, p = projection;
-  const geo = latheSolid([[0.28 * d, 0], [0.22 * d, 0.3 * p], [0.5 * d, 0.62 * p], [0.46 * d, 0.9 * p], [0.25 * d, p]], 8);
+  const geo = latheSolid([[0.28 * d, 0], [0.22 * d, 0.3 * p], [0.45 * d, 0.56 * p], [0.5 * d, 0.74 * p], [0.43 * d, 0.92 * p], [0.24 * d, p]], 10);
   geo.rotateX(Math.PI / 2);
   return [new THREE.Mesh(geo, mat)];
 }

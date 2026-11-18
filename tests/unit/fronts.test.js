@@ -142,6 +142,62 @@ test('solveFronts degrades deterministically: counts, then collapse, then fallba
   assert.equal(tiny.stats.degraded, 'fallback');
 });
 
+test('solveFronts never yields zero fronts for a plan with a front leaf, over short fields', () => {
+  const hasFront = (node) => (node.leaf ? node.leaf !== 'open' : node.children.some(hasFront));
+  let checked = 0;
+  for (const id of Object.keys(CABINET_TEMPLATES)) {
+    for (const style of Object.keys(CABINET_STYLES)) {
+      const r = createRng(`fronts-short/${id}/${style}`);
+      for (let i = 0; i < 120; i++) {
+        const { plan, field, opts } = cabinetCase(id, style, r);
+        if (!hasFront(plan)) continue;
+        const height = 0.12 + 0.3 * (i / 119);
+        const short = { ...field, y1: field.y0 + height };
+        const layout = solveFronts(plan, short, opts);
+        checked++;
+        assert.ok(layout.fronts.length > 0, `${id}/${style}/${i}: no fronts at h ${height.toFixed(3)} (${layout.stats.degraded})`);
+      }
+    }
+  }
+  assert.ok(checked > 1000);
+  const tv3 = solveFronts({ split: 'y', weights: [0.5, 0.5], children: [{ leaf: 'open', shelves: 0 }, { leaf: 'drawers', count: 1, across: 3 }] }, { x0: -0.7, x1: 0.7, y0: 0.15, y1: 0.36, z: 0.2 });
+  assert.deepStrictEqual([tv3.stats.drawers, tv3.stats.open, tv3.stats.degraded], [3, 0, 'collapsed']);
+  const tv5 = solveFronts({ split: 'x', symmetric: true, children: [{ leaf: 'drawers', count: 2 }, { leaf: 'open' }, { leaf: 'drawers', count: 2 }] }, { x0: -0.3, x1: 0.3, y0: 0.15, y1: 0.45, z: 0.2 });
+  assert.ok(tv5.stats.drawers >= 2 && tv5.stats.open === 0);
+});
+
+test('solveFronts: the middle door of an odd door row is centred and gets a top-centre handle', () => {
+  const field = { x0: -0.75, x1: 0.75, y0: 0.15, y1: 0.75, z: 0.2 };
+  const layout = solveFronts({ split: 'x', symmetric: true, children: [{ leaf: 'doors' }, { leaf: 'doors' }, { leaf: 'doors' }] }, field);
+  assert.deepStrictEqual(layout.fronts.map((f) => f.centred ?? false), [false, true, false]);
+  for (const kind of ['knob', 'bar', 'cutout', 'groove', 'lip', 'tab', 'ring']) {
+    const [slot] = handleSlots(layout.fronts[1], { kind });
+    assert.ok(near(slot.x, 0), `${kind}: centred x`);
+    assert.equal(slot.axis, 'x', kind);
+    assert.ok(slot.y > (layout.fronts[1].y0 + layout.fronts[1].y1) / 2, `${kind}: upper half`);
+  }
+  const outer = handleSlots(layout.fronts[0], { kind: 'knob' })[0];
+  assert.ok(outer.x > (layout.fronts[0].x0 + layout.fronts[0].x1) / 2);
+  const four = solveFronts({ split: 'x', symmetric: true, children: [{ leaf: 'doors' }, { leaf: 'doors' }, { leaf: 'doors' }, { leaf: 'doors' }] }, field);
+  assert.ok(four.fronts.every((f) => !f.centred));
+  const explicit = solveFronts({ split: 'x', children: [{ leaf: 'doors' }, { leaf: 'doors', hinge: 'left' }, { leaf: 'doors' }] }, field);
+  assert.ok(!explicit.fronts[1].centred);
+});
+
+test('buildFronts: backers use mats.backer when given, the carcass material otherwise', () => {
+  const layout = solveFronts({ split: 'y', children: [{ leaf: 'drawers', count: 1 }, { leaf: 'doors' }] }, { x0: -0.3, x1: 0.3, y0: 0.1, y1: 0.7, z: 0.2 });
+  const front = new THREE.MeshBasicMaterial(), carcass = new THREE.MeshBasicMaterial(), backer = new THREE.MeshBasicMaterial();
+  const count = (parts, m) => {
+    let n = 0;
+    for (const part of parts) part.traverse((o) => { if (o.isMesh && o.material === m) n++; });
+    return n;
+  };
+  const plain = buildFronts(layout, {}, { kind: 'groove' }, { front, carcass });
+  const shadowed = buildFronts(layout, {}, { kind: 'groove' }, { front, carcass, backer });
+  assert.equal(count(shadowed, backer), layout.closed.length);
+  assert.equal(count(plain, carcass) - count(shadowed, carcass), layout.closed.length);
+});
+
 test('desk plan shapes solve with their per-call options', () => {
   const expect = { apronRow: [3, 0], three: [3, 0], graduated4: [4, 0], boxFile: [2, 0], twoBoxFile: [3, 0], drawerDoor: [1, 1], hung: [3, 0], centre: [1, 0] };
   for (const [id, shape] of Object.entries(DESK_PLANS)) {

@@ -30,6 +30,8 @@ const DEGRADE_ORDER = ['none', 'counts', 'collapsed', 'fallback'];
 const isLeaf = (node) => typeof node.leaf === 'string';
 const containsOpen = (node) => (isLeaf(node) ? node.leaf === 'open' : node.children.some(containsOpen));
 const leavesOf = (node) => (isLeaf(node) ? [node] : node.children.flatMap(leavesOf));
+const openOnly = (node) => leavesOf(node).every((leaf) => leaf.leaf === 'open');
+const hasFrontLeaf = (node) => leavesOf(node).some((leaf) => leaf.leaf !== 'open');
 
 function separator(o, a, b) {
   if (o.construction === 'inset') return o.frameWidth;
@@ -218,7 +220,7 @@ function autoHinge(x0, x1, mirror, explicit) {
   return centre > 1e-6 ? 'right' : 'left';
 }
 
-function solveDoors(state, node, cell, mirror) {
+function solveDoors(state, node, cell, mirror, middle) {
   const { o, inset } = state;
   const sep = innerSep(o);
   const H = cell.y1 - cell.y0;
@@ -234,10 +236,12 @@ function solveDoors(state, node, cell, mirror) {
     const leafGap = inset ? 0 : o.gap;
     const columns = splitEven(cell.x0, cell.x1, count, leafGap);
     if ((columns[0][1] - columns[0][0]) > o.maxDoorW + 1e-9) state.wideDoors = true;
+    const explicit = node.hinge === 'left' || node.hinge === 'right';
+    const centred = count === 1 && !explicit && middle;
     splitEven(cell.y0, cell.y1, rows, sep).reverse().forEach(([y0, y1], row) => {
       columns.forEach(([x0, x1], col) => {
         const hinge = count === 1 ? autoHinge(x0, x1, mirror, node.hinge) : col % 2 === 0 ? 'left' : 'right';
-        addFront(state, 'door', { ...cell, x0, x1, y0, y1 }, { hinge, leaf, bay: leaf, row, col });
+        addFront(state, 'door', { ...cell, x0, x1, y0, y1 }, { hinge, leaf, bay: leaf, row, col, ...(centred ? { centred: true } : {}) });
       });
       if (inset && row > 0) addMember(state, 'x', { x0: cell.x0, x1: cell.x1, y0: y1, y1: y1 + sep }, false);
     });
@@ -256,10 +260,10 @@ function solveOpen(state, node, cell) {
   state.open.push({ x0: cell.x0, x1: cell.x1, y0: cell.y0, y1: cell.y1, shelves });
 }
 
-function solveNode(state, node, cell, mirror) {
+function solveNode(state, node, cell, mirror, middle = false) {
   if (isLeaf(node)) {
     if (node.leaf === 'drawers') return solveDrawers(state, node, cell);
-    if (node.leaf === 'doors') return solveDoors(state, node, cell, mirror);
+    if (node.leaf === 'doors') return solveDoors(state, node, cell, mirror, middle);
     if (node.leaf === 'open') return solveOpen(state, node, cell);
     throw new Error(`solveFronts: unknown leaf "${node.leaf}"`);
   }
@@ -269,7 +273,7 @@ function solveNode(state, node, cell, mirror) {
   const n = node.children.length;
   node.children.forEach((child, i) => {
     const childMirror = node.split === 'x' && node.symmetric && i > (n - 1) / 2 ? !mirror : mirror;
-    solveNode(state, child, cells[i], childMirror);
+    solveNode(state, child, cells[i], childMirror, node.split === 'x' && n >= 3 && n % 2 === 1 && i === (n - 1) / 2);
     if (i === 0) return;
     const full = containsOpen(child) || containsOpen(node.children[i - 1]);
     if (!state.inset && !full) return;
@@ -337,12 +341,27 @@ function reduceCounts(node, axis) {
   return true;
 }
 
+function openVictim(split) {
+  if (!split.children.some(hasFrontLeaf)) return -1;
+  const n = split.children.length;
+  const order = Array.from({ length: n }, (_, i) => n - 1 - i);
+  if (split.symmetric && n % 2 === 1) order.unshift((n - 1) / 2);
+  return order.find((i) => openOnly(split.children[i])) ?? -1;
+}
+
 function collapse(root, split) {
   const n = split.children.length;
   const weights = split.children.map((child, i) => split.weights?.[i] ?? child.weight ?? 1);
   const sizes = split.children.map((_, i) => fixedSizeOf(split, i));
+  const victim = openVictim(split);
   let keep;
-  if (split.symmetric && n >= 3) {
+  if (victim >= 0) {
+    keep = Array.from({ length: n }, (_, i) => i).filter((i) => i !== victim);
+    if (split.symmetric && n >= 3 && victim === (n - 1) / 2) {
+      weights[victim - 1] += weights[victim] / 2;
+      weights[victim + 1] += weights[victim] / 2;
+    } else weights[victim > 0 ? victim - 1 : 1] += weights[victim];
+  } else if (split.symmetric && n >= 3) {
     keep = Array.from({ length: n - 2 }, (_, i) => i + 1);
     weights[1] += weights[0];
     weights[n - 2] += weights[n - 1];
@@ -399,13 +418,20 @@ export function solveFronts(plan, field, opts = {}) {
   const raise = (level) => {
     if (DEGRADE_ORDER.indexOf(level) > DEGRADE_ORDER.indexOf(degraded)) degraded = level;
   };
+  const wantsFronts = hasFrontLeaf(current);
   for (let step = 0; step < 200; step++) {
     const state = layoutOnce(current, field, o);
     const tooMany = state.fronts.length > o.maxFronts;
-    if (!state.failures.length && !tooMany) return finish(state, degraded);
+    const empty = wantsFronts && !state.fronts.length;
+    if (!state.failures.length && !tooMany && !empty) return finish(state, degraded);
     const failure = state.failures[0];
     if (failure) {
       const split = failure.reason === 'split' ? failure.node : null;
+      if (split && openVictim(split) >= 0) {
+        current = collapse(current, split);
+        raise('collapsed');
+        continue;
+      }
       if (split && reduceCounts(split, split.split)) {
         raise('counts');
         continue;
@@ -416,6 +442,7 @@ export function solveFronts(plan, field, opts = {}) {
       raise('collapsed');
       continue;
     }
+    if (empty) break;
     if (reduceCounts(current, null)) {
       raise('counts');
       continue;
@@ -520,6 +547,7 @@ function placeSlots(front, hw) {
   const isDoor = front.kind === 'door';
   let kind = isDoor ? hw.doorKind ?? DOOR_KIND[hw.kind] ?? hw.kind : hw.kind;
   if (kind === 'none') return [];
+  if (isDoor && front.centred) return placeSlots({ ...front, kind: 'flap', centred: false }, { ...hw, kind, vPos: 'top' });
   const w = front.x1 - front.x0;
   const h = front.y1 - front.y0;
   const z = front.z1;
@@ -796,7 +824,7 @@ export function buildFronts(layout, {
     const z1 = layout.fronts[0].z0;
     for (const rect of layout.closed) {
       const clipped = clipRect(rect, opening);
-      if (clipped) parts.push(slabBox(clipped, z1 - backerThickness, z1, carcassMat));
+      if (clipped) parts.push(slabBox(clipped, z1 - backerThickness, z1, mats.backer ?? carcassMat));
     }
   }
   return parts;
