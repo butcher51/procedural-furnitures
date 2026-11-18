@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { beam, boxProjectUVs, endPanelShape, extrudeProfile, latheSolid } from '../../src/core/geometry.js';
 import { splitSpan } from '../../src/core/layout.js';
-import { FRAME_COLORS, STONE_TONES, WOOD_TONES, hsl, pickWood, secondaryColor } from '../../src/core/color.js';
+import { FRAME_COLORS, STONE_TONES, WOODS, hsl, pickWood, secondaryColor } from '../../src/core/color.js';
 import { createRng } from '../../src/core/rng.js';
 
 const mat = new THREE.MeshBasicMaterial();
@@ -149,7 +149,7 @@ test('palette constants: stone tones, frame colours, chair secondary formulas, p
   assert.equal(secondaryColor('white', 0.3), '#f4f1ea');
   const r = createRng('wood'), ref = createRng('wood');
   const wood = pickWood(r);
-  const tone = ref.pick(WOOD_TONES);
+  const tone = ref.pick(WOODS);
   assert.equal(wood.name, tone.name);
   assert.equal(wood.h, tone.h + ref.range(-0.01, 0.01));
   assert.equal(wood.l, tone.l + ref.range(-0.05, 0.05));

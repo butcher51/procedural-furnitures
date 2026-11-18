@@ -12,7 +12,8 @@ Source of truth for architecture: `plan/02-architecture.md`. This skill is the c
 | Path | Contents |
 |---|---|
 | `src/core/rng.js` | `hashString`, `mulberry32`, `createRng`, `createGroupedRng`, `weightedPick`, `weightedShuffle`, `rollStyle` |
-| `src/core/color.js` | `hsl`, `WOOD_TONES`, `STONE_TONES`, `FRAME_COLORS`, `SECONDARY_MODES`, `secondaryColor`, `pickWood` |
+| `src/core/color.js` | `hsl`, `WOOD_TONES` (chair, frozen), `WOODS`, `STONE_TONES`, `FRAME_COLORS`, `SECONDARY_MODES`, `secondaryColor` (chair, frozen), `pickWood` |
+| `src/core/palette.js` | `oklch`, `chromaLimit`, `CHROMA_LIMITS`, `colourIsCalm`, `capSaturation`, `muted`, `LIGHTNESS_BOUNDS`, `fabricColor`, `FABRIC_MOODS`, `fabricHue`, `paintColor`, `PAINTS`, `accentColor`, `harmoniousSecondary`, `HARMONY_MODES`, `shade`, `swatch`, `hexToHsl` |
 | `src/core/geometry.js` | `edgeRadius`, `puffy`, `strut`, `tube`, `roundedDiscGeometry`, `extrudeUp`, `superellipseShape`, `bendZ`, `bentBandGeometry`, `normalizeUVs`, `beam`, `extrudeProfile`, `endPanelShape`, `latheSolid`, `boxProjectUVs` |
 | `src/core/layout.js` | `splitSpan` |
 | `src/core/supports.js` | `legAnchors`, `rowAnchors`, `buildLegs`, `legLines`, `pointOnLeg`, `LEG_PROFILES`, `bentwoodFoot`, `buildCurvyLegs`, `buildStretchers`, `buildApron`, `buildPedestal`, `buildTrestle` |
@@ -96,12 +97,21 @@ export default {
 
 | Helper | Makes | Gotcha |
 |---|---|---|
-| `hsl(h, s, l)` (color) | sRGB hex string | Inputs 0–1. Keep s ≤ 0.75 and l in 0.25–0.85 so palettes never go neon. |
-| `WOOD_TONES` (color) | `{ name, h, s, l }` × 6 | Jitter h ±0.01 and l ±0.05 per item (use `pickWood`). |
-| `pickWood(r)` (color) | `{ name, h, s, l }` with h ± 0.01 and l ± 0.05 | Exactly 3 draws (pick, h, l), the chair's order. Draw it even when unused so the stream stays stable. |
+| `hsl(h, s, l)` (color) | sRGB hex string | Inputs 0–1. New types never call it with drawn s/l: use the `palette.js` pickers (see Colour). |
+| `WOOD_TONES` (color) | `{ name, h, s, l }` × 6 | Chair only, frozen for its golden params. New types use `WOODS` via `pickWood`. |
+| `WOODS` (color) | `{ name, h, s, l }` × 6, same names and order as `WOOD_TONES`, lower saturation, cherry/mahogany browner | Every tone ± 0.04 l passes `colourIsCalm`; keep wood lifts (`l ± 0.04`) inside that. |
+| `pickWood(r)` (color) | `{ name, h, s, l }` from `WOODS` with h ± 0.01 and l ± 0.05 | Exactly 3 draws (pick, h, l). Draw it even when unused so the stream stays stable. |
 | `STONE_TONES` (color) | `{ name, h, s, l }` × 4: white marble, black marble, travertine, grey terrazzo | Jitter l ±0.03. |
 | `FRAME_COLORS` (color) | `{ black, white, metal }` hexes | The chair's frame hexes; don't invent new near-blacks. |
-| `secondaryColor(mode, hue)` (color) | Hex for each of `SECONDARY_MODES` (`light`, `dark`, `complement`, `white`) | The chair's formulas; `white` is `#f4f1ea`. |
+| `secondaryColor(mode, hue)` (color) | Hex for each of `SECONDARY_MODES` (`light`, `dark`, `complement`, `white`) | Chair only, frozen (its `complement` is a fixed s 0.55 / l 0.55 and goes neon). New types use `harmoniousSecondary`. |
+| `colourIsCalm(hex)` (palette) | `true` when OKLCH chroma ≤ `chromaLimit(hue)` | The enforced rubric: `tests/unit/colour-calm.test.js` checks every `#rrggbb` string in params and every material colour over 500 seeds per type. |
+| `capSaturation(h, s, l)` / `muted(h, s, l)` (palette) | Swatch `{ h, s, l, hex }` / its hex, with l clamped to `LIGHTNESS_BOUNDS` [0.18, 0.9] and s lowered (binary search) until chroma ≤ 0.92 × limit | Hue-aware: green/cyan/blue/violet lose far more saturation than earth/rose. Never raises s. Use it for any derived colour you compute yourself. |
+| `fabricColor(r, { mood = 'muted' })` (palette) | Calm fabric swatch; moods `neutral` / `muted` / `bold` (`FABRIC_MOODS`) | Exactly 3 draws (hue, s, l). Hue goes through `fabricHue`, which under-weights green and magenta. |
+| `paintColor(r)` (palette) | `{ name, h, s, l, hex }` from the curated `PAINTS` (sage, olive, forest, slate blue, navy, powder blue, teal, dusty rose, oxblood, terracotta, ochre, cream, putty, charcoal, plum) | Exactly 3 draws (weighted pick, h ± 0.012, l ± 0.04). |
+| `accentColor(r, base)` (palette) | Pillow / stripe / trim swatch related to `base` (`analogous`, muted `complement`, `warm` ochre–rust, or `tonal`) | Exactly 3 draws. Saturation follows the base band (0.18–0.4); lightness moves away from the base for contrast. |
+| `harmoniousSecondary(primary, mode)` (palette) | Pattern secondary for `HARMONY_MODES` (`light`, `dark`, `complement`, `analogous`, `white`) | Pure, no draws. `complement` keeps s ≤ 0.9 × primary s (min 0.06, max 0.38), so a neutral primary gets a neutral complement. `primary` is any `{ h, s, l }`. |
+| `shade(base, dl, sScale = 1)` (palette) | `base` lighter/darker (and optionally desaturated), capped | Use for body/plinth/frame "match" colours instead of `hsl(hue, s·0.85, l − 0.12)`. For a frame that must read against painted slats use a large `dl` (≥ 0.2) or a different source. |
+| `swatch(hex)` / `hexToHsl(hex)` (palette) | `{ h, s, l, hex }` / `{ h, s, l }` from a hex | Lets you feed a fixed hex (e.g. a stone or frame colour) to `accentColor` / `harmoniousSecondary`. |
 | `edgeRadius(r, w, h, d)` (geometry) | Clamped bevel radius | Always use it; RoundedBoxGeometry breaks when r ≥ half the thinnest side. |
 | `puffy(w, h, d, r, mat, segments = 3)` (geometry) | Rounded box mesh centred on origin | Radius is clamped via `edgeRadius`. Geometry is non-indexed. Cost is 12·(2·segments+1)² triangles: 588 at 3, 300 at 2. Pass `segments` 2 for thin repeated bars (slats, rails) to stay under 6k. |
 | `roundedDiscGeometry(radius, h, edge, sides)` | Lathe disc with rounded rim, centred on y | `sides` 6–12 keeps it low poly. |
@@ -140,6 +150,15 @@ export default {
 - `solid(color, roughness = 0.9)` — upholstered bodies and anything plain.
 
 Create a fresh material per item per role (merge groups by material identity). Pattern textures are cached and ref-counted; `disposeObject` releases them, so never call `texture.dispose()` yourself. Planned roles: `glass`, `emissive`.
+
+### Colour
+
+**Rule: new types must draw every colour via these pickers**: `fabricColor`, `paintColor`, `accentColor`, `harmoniousSecondary`, `shade` / `capSaturation` (`src/core/palette.js`), `pickWood` + `WOODS`, `STONE_TONES`, `FRAME_COLORS`. No `hsl(hue, r.range(…), …)` on a free hue, no `secondaryColor`, no `WOOD_TONES` (chair only). Store swatches as hex strings in params; keep `{ h, s, l }` only where a later group needs it.
+
+- `colourIsCalm` thresholds (OKLCH chroma limit, linear between hue anchors in degrees): 0° 0.10 · 30° 0.105 · 60° 0.12 · 85° 0.115 · 105° 0.08 · 130° 0.07 · 160° 0.07 · 195° 0.075 · 230° 0.075 · 265° 0.075 · 290° 0.07 · 330° 0.08 · 360° 0.10. Greys, blacks, whites, `WOODS` and `STONE_TONES` pass; brass at `hsl(0.11, 0.55, 0.5)` fails narrowly, so draw brass through `capSaturation(0.11, s, l)`; review neons (lime, kelly green, cyan, royal blue, electric violet, magenta, hot pink) fail.
+- The calm test covers every `#rrggbb` string in params, including colours a seed rolls but does not use, so unused fields must come from the pickers too.
+- `tests/unit/colour-calm.test.js` marks types still on the old palette as `todo` (`TODO` set). Remove your type from that set when it adopts the pickers.
+- Visual check: `node scripts/palette-board.mjs [out/palette-board.png] [seed]` renders fabric moods, paints, woods and primary + secondary + accent pairs; anything that fails `colourIsCalm` gets a red outline.
 
 ## Budgets (per item)
 

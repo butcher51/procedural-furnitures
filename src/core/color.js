@@ -31,8 +31,17 @@ export function secondaryColor(mode, hue) {
   return '#f4f1ea';
 }
 
+export const WOODS = [
+  { name: 'oak', h: 0.09, s: 0.3, l: 0.58 },
+  { name: 'walnut', h: 0.075, s: 0.24, l: 0.31 },
+  { name: 'cherry', h: 0.055, s: 0.32, l: 0.4 },
+  { name: 'honey', h: 0.095, s: 0.38, l: 0.54 },
+  { name: 'birch', h: 0.11, s: 0.26, l: 0.74 },
+  { name: 'mahogany', h: 0.04, s: 0.3, l: 0.28 },
+];
+
 export function pickWood(r) {
-  const wood = r.pick(WOOD_TONES);
+  const wood = r.pick(WOODS);
   const h = wood.h + r.range(-0.01, 0.01);
   const l = wood.l + r.range(-0.05, 0.05);
   return { name: wood.name, h, s: wood.s, l };
