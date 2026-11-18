@@ -97,3 +97,129 @@ export function tube(points, radius, sides, mat, closed = false, segments = 10) 
   const curve = new THREE.CatmullRomCurve3(points, closed, 'centripetal');
   return new THREE.Mesh(new THREE.TubeGeometry(curve, segments, radius, sides, closed), mat);
 }
+
+function roundedRectRing(hw, ht, r, steps) {
+  const ring = [];
+  const corners = [[1, 1], [-1, 1], [-1, -1], [1, -1]];
+  corners.forEach(([sw, st], k) => {
+    for (let i = 0; i <= steps; i++) {
+      const a = (k + i / steps) * (Math.PI / 2);
+      ring.push([sw * (hw - r) + Math.cos(a) * r, st * (ht - r) + Math.sin(a) * r]);
+    }
+  });
+  return ring;
+}
+
+export function beam(a, b, width, thickness, radius, mat, steps = 2) {
+  const axis = new THREE.Vector3().subVectors(b, a);
+  const length = axis.length();
+  const dir = axis.clone().normalize();
+  const side = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0, 1, 0));
+  if (side.lengthSq() < 1e-12) side.set(1, 0, 0);
+  side.normalize();
+  const up = new THREE.Vector3().crossVectors(side, dir).normalize();
+  const r = edgeRadius(radius, width, thickness, Math.max(width, thickness));
+  const ring = roundedRectRing(width / 2, thickness / 2, r, steps);
+  const arc = [0];
+  for (let i = 1; i <= ring.length; i++) {
+    const [x0, y0] = ring[i - 1], [x1, y1] = ring[i % ring.length];
+    arc.push(arc[i - 1] + Math.hypot(x1 - x0, y1 - y0));
+  }
+  const point = ([w, t], along) => new THREE.Vector3().addScaledVector(side, w).addScaledVector(up, t).addScaledVector(dir, along);
+  const positions = [], uvs = [];
+  const push = (p, u, v) => {
+    positions.push(p.x, p.y, p.z);
+    uvs.push(u, v);
+  };
+  const h = length / 2;
+  for (let i = 0; i < ring.length; i++) {
+    const j = (i + 1) % ring.length;
+    const a0 = point(ring[i], -h), a1 = point(ring[j], -h), b0 = point(ring[i], h), b1 = point(ring[j], h);
+    push(a0, 0, arc[i]); push(b0, length, arc[i]); push(a1, 0, arc[i + 1]);
+    push(a1, 0, arc[i + 1]); push(b0, length, arc[i]); push(b1, length, arc[i + 1]);
+  }
+  for (let i = 1; i < ring.length - 1; i++) {
+    const [p0, p1, p2] = [ring[0], ring[i], ring[i + 1]];
+    push(point(p0, -h), p0[0], p0[1]); push(point(p1, -h), p1[0], p1[1]); push(point(p2, -h), p2[0], p2[1]);
+    push(point(p0, h), p0[0], p0[1]); push(point(p2, h), p2[0], p2[1]); push(point(p1, h), p1[0], p1[1]);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geo.computeVertexNormals();
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.addVectors(a, b).multiplyScalar(0.5);
+  return mesh;
+}
+
+export function extrudeProfile(outline, thickness, bevel, plane = 'side') {
+  const shape = outline instanceof THREE.Shape ? outline : new THREE.Shape(outline);
+  const depth = Math.max(thickness - bevel * 2, 0.001);
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth,
+    bevelEnabled: bevel > 0,
+    bevelThickness: bevel,
+    bevelSize: bevel,
+    bevelOffset: -bevel,
+    bevelSegments: 2,
+  });
+  geo.translate(0, 0, -depth / 2);
+  if (plane === 'side') geo.rotateY(-Math.PI / 2);
+  return geo;
+}
+
+export function endPanelShape(width, height, { cut = 'none', cutWidth = 0, cutHeight = 0, steps = 6 } = {}) {
+  const hw = width / 2;
+  const cw = Math.min(cutWidth, width * 0.6) / 2;
+  const ch = Math.min(cutHeight, height * 0.9);
+  const pts = [new THREE.Vector2(-hw, 0)];
+  if (cut !== 'none' && cw > 0 && ch > 0) {
+    pts.push(new THREE.Vector2(-cw, 0));
+    if (cut === 'arch') {
+      for (let i = 1; i < steps; i++) {
+        const a = Math.PI - (i / steps) * Math.PI;
+        pts.push(new THREE.Vector2(Math.cos(a) * cw, Math.sin(a) * ch));
+      }
+    } else if (cut === 'v') {
+      pts.push(new THREE.Vector2(0, ch));
+    } else {
+      pts.push(new THREE.Vector2(-cw, ch), new THREE.Vector2(cw, ch));
+    }
+    pts.push(new THREE.Vector2(cw, 0));
+  }
+  pts.push(new THREE.Vector2(hw, 0), new THREE.Vector2(hw, height), new THREE.Vector2(-hw, height));
+  return new THREE.Shape(pts);
+}
+
+export function latheSolid(profile, sides) {
+  const pts = profile.map(([r, y]) => new THREE.Vector2(r, y));
+  const first = pts[0], last = pts[pts.length - 1];
+  if (first.x !== 0) pts.unshift(new THREE.Vector2(0, first.y));
+  if (last.x !== 0) pts.push(new THREE.Vector2(0, last.y));
+  return new THREE.LatheGeometry(pts, sides);
+}
+
+const PROJECTIONS = [['z', 'y'], ['x', 'z'], ['x', 'y']];
+
+export function boxProjectUVs(geometry, unit = 1) {
+  const geo = geometry.index ? geometry.toNonIndexed() : geometry;
+  if (geo !== geometry) geometry.dispose();
+  const pos = geo.attributes.position;
+  const uv = new Float32Array(pos.count * 2);
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+  const n = new THREE.Vector3(), e = new THREE.Vector3();
+  for (let i = 0; i + 2 < pos.count; i += 3) {
+    a.fromBufferAttribute(pos, i);
+    b.fromBufferAttribute(pos, i + 1);
+    c.fromBufferAttribute(pos, i + 2);
+    n.subVectors(c, b).cross(e.subVectors(a, b));
+    const ax = Math.abs(n.x), ay = Math.abs(n.y), az = Math.abs(n.z);
+    const [u, v] = PROJECTIONS[ax >= ay && ax >= az ? 0 : ay >= az ? 1 : 2];
+    [a, b, c].forEach((p, k) => {
+      uv[(i + k) * 2] = p[u] / unit;
+      uv[(i + k) * 2 + 1] = p[v] / unit;
+    });
+  }
+  geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  return geo;
+}

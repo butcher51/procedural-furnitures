@@ -11,13 +11,14 @@ Source of truth for architecture: `plan/02-architecture.md`. This skill is the c
 
 | Path | Contents |
 |---|---|
-| `src/core/rng.js` | `hashString`, `mulberry32`, `createRng`, `createGroupedRng` |
-| `src/core/color.js` | `hsl`, `WOOD_TONES` |
-| `src/core/geometry.js` | `edgeRadius`, `puffy`, `strut`, `tube`, `roundedDiscGeometry`, `extrudeUp`, `superellipseShape`, `bendZ`, `bentBandGeometry`, `normalizeUVs` |
-| `src/core/supports.js` | `legAnchors`, `buildLegs`, `LEG_PROFILES`, `bentwoodFoot`, `buildCurvyLegs` |
+| `src/core/rng.js` | `hashString`, `mulberry32`, `createRng`, `createGroupedRng`, `weightedPick`, `weightedShuffle`, `rollStyle` |
+| `src/core/color.js` | `hsl`, `WOOD_TONES`, `STONE_TONES`, `FRAME_COLORS`, `SECONDARY_MODES`, `secondaryColor`, `pickWood` |
+| `src/core/geometry.js` | `edgeRadius`, `puffy`, `strut`, `tube`, `roundedDiscGeometry`, `extrudeUp`, `superellipseShape`, `bendZ`, `bentBandGeometry`, `normalizeUVs`, `beam`, `extrudeProfile`, `endPanelShape`, `latheSolid`, `boxProjectUVs` |
+| `src/core/layout.js` | `splitSpan` |
+| `src/core/supports.js` | `legAnchors`, `rowAnchors`, `buildLegs`, `legLines`, `pointOnLeg`, `LEG_PROFILES`, `bentwoodFoot`, `buildCurvyLegs`, `buildStretchers`, `buildApron`, `buildPedestal`, `buildTrestle` |
 | `src/core/materials.js` | `createMaterials({ textureFactory })`, `canvasPatternTexture`, ref-counted pattern texture cache |
 | `src/core/merge.js` | `groupParts`, `mergeByMaterial`, `disposeObject` |
-| `src/core/item.js` | `itemSeed`, `generateItem(def, sceneSeed, n, rerolls, dna)`, `buildItem(def, params, kit)`, `rerollableGroups`, `fixedGroups` |
+| `src/core/item.js` | `itemSeed`, `generateItem(def, sceneSeed, n, rerolls, dna)`, `buildItem(def, params, kit)`, `rerollableGroups`, `fixedGroups`, `groupApplies(def, groupId, params)`, `appliedGroups(def, params)` |
 | `src/core/kit.js` | `createKit({ textureFactory })` → `{ materials }` |
 | `src/furniture/registry.js` | `register`, `get`, `has`, `list`; one import + `register()` line per type |
 | `src/furniture/chair/` | Reference plugin: `index.js` (definition), `params.js`, `build.js` |
@@ -29,7 +30,16 @@ Generators import geometry/support helpers directly from `src/core/*`; `kit` car
 - Units are **meters**. Use real-world, ergonomic ranges (see the spec for the type).
 - **y is up.** Items stand on **y = 0**, the **front faces +z**, items are **centred on x/z**.
 - Back rests pivot on the rear edge of the seat (`pivot.rotation.x = -deg(backAngle)` tilts backwards).
-- Low-poly, flat-shaded, soft bevels: 3 bevel segments on boxes (2 on thin repeated bars such as slats and rails), 4–12 sides on cylinders.
+- Low-poly, flat-shaded, soft bevels (R3: never fewer than 2 facets on a rounded edge):
+  - hero soft parts (seats, tops, cushions, upholstered bodies, panels): `puffy` with 3 segments; an item-wide budget fallback may drop a whole role to 2, never mixed;
+  - structural boxes that are not repeated bars (arm posts, back frames, plinths, runners): `puffy` with 2;
+  - thin repeated bars (slats, back boards, rails, aprons, cleats, square stretchers, trestle members, arm boards): `beam` (2 steps, 44 tris);
+  - `puffy` with 1 segment is not allowed. The chair keeps 2-segment `puffy` slats (golden test).
+- Cylinders 4–12 sides; flat round tops and discs larger than ⌀ 0.8 m may use 16.
+- Material roles (R5): at most 4 per item, listed in the spec with the item-wide maximum. Parts sharing a colour share one material instance.
+- Grid cells are square (R4); each type keeps its own `cell.spacing`. `cell.spacingZ` is reserved for wave 2.
+- Leg params (R6): `legCount` (0 for supports built another way, never 1 for new types, 2 only for the sled branch on purpose), `legThickness` (top diameter), `legSides` (4–8), `legTaper` (bottom ÷ top radius), `legSplay` (foot offset; clamp `legSplay ≤ 0.35 × legHeight`), `legHeight` (= `fp.top`), `legInset`. Branch on the support kind before calling `buildLegs`; pass an explicit leg object when the type lacks a field a branch reads. Stretcher/footrest kinds: `'none' | 'ring' | 'perimeter' | 'h' | 'ends' | 'cross'`.
+- Core vs local (R7): a helper goes into `src/core` when two wave-1 types use it or it fixes a cross-type convention; otherwise it lives in the generator folder until the architect promotes it.
 
 ## FurnitureDefinition contract
 
@@ -42,7 +52,8 @@ export default {
   plural: 'tables',
   groups: [
     { id: 'style', label: 'Style', fields: ['style'] },
-    { id: 'shape', label: 'Shape', fields: ['topShape', 'height'] },
+    { id: 'shape', label: 'Shape', reads: ['style'], fields: ['topShape', 'height', 'hasShelf'] },
+    { id: 'shelf', label: 'Shelf', reads: ['shape'], fields: ['shelfHeight'], appliesTo: (p) => p.hasShelf },
     { id: 'palette', label: 'Colours', fields: ['topColor'] },
     { id: 'finish', label: 'Finish', reads: ['palette'], fields: ['frameColor'] },
   ],
@@ -54,9 +65,9 @@ export default {
 
 | Member | Contract |
 |---|---|
-| `styles` | Style id → roll weight. Tests check the observed distribution (±4 pp over 2,000 seeds). |
+| `styles` | Style id → roll weight. Tests check the observed distribution (±4 pp over 2,000 seeds). Modern types roll it with `const style = rollStyle(g, definition.styles)` and keep the `style` group rerollable (R1). The chair stays `rerollable: false`. |
 | `cell` | Grid spacing (m) and grid size. Item x/z extent must be < `spacing − 0.1`. |
-| `groups` | Groups in roll order. `fields`: the params the group owns (re-roll tests check isolation with it). `reads`: earlier groups whose results it uses. `rerollable: false` hides the ⟳ button and ignores rerolls. A group may read earlier groups, never later ones. |
+| `groups` | Groups in roll order. `fields`: the params the group owns (re-roll tests check isolation with it). `reads`: earlier groups whose results it uses. `rerollable: false` hides the ⟳ button and ignores rerolls. A group may read earlier groups, never later ones. `appliesTo(params) → boolean` is optional (R2): pure, reads only the final params, never affects generation. When it returns false the panel hides that group's ⟳ (rows still show), and the re-roll test skips the change rate for that seed but requires that a re-roll changes no field outside the group's own `fields`. If earlier groups decide that the group does not apply, give its fields neutral values (`0`, `false`, `null`, `'none'`). Call it through `groupApplies(def, id, params)` / `appliedGroups(def, params)` from `item.js`. |
 | `plural` | Loader text ("Generating tables…"). Defaults to `label + 's'`. |
 | `itemSeed`, `legacyRng` | Chair only, for old links. New types omit both. |
 | `generateParams(g, dna)` | Pure. All randomness via `g.roll(groupId, (r) => …)`. Returns JSON-serialisable data incl. `seed`, `type`, `style`. |
@@ -75,12 +86,22 @@ export default {
 
 `createRng(seed)` → `{ next(), range(min, max), int(min, max) /* inclusive */, pick(arr), chance(p) }`. `hashString` + `mulberry32`. Never use `Math.random`.
 
+| Helper | Does | Gotcha |
+|---|---|---|
+| `weightedPick(r, weights)` | `weights` is `{ id: w }` or `[[value, w], …]`; one `r.next()`, cumulative in insertion order | Object keys come back as strings. Use it instead of ad-hoc threshold chains. |
+| `weightedShuffle(r, weights)` | Every value once, ordered by Efraimidis–Spirakis keys (`u^(1/w)`, one draw per entry, descending) | Weight-0 entries go last (still one draw each). |
+| `rollStyle(g, styles)` | Style for a modern grouped rng (R1). Re-roll 0 = `weightedPick` on the `style/0` stream (identical to `g.roll('style', (r) => weightedPick(r, styles))`). Re-rolls 1…k−1 visit every other style once, in a weighted-shuffle order from stream `${seed}/style/order`; re-roll k returns the base; then it cycles. | Call it outside `g.roll`, modern mode only. Re-roll 1 is never the base style, so the style change rate is 100 %. |
+
 ## Helper catalogue
 
 | Helper | Makes | Gotcha |
 |---|---|---|
 | `hsl(h, s, l)` (color) | sRGB hex string | Inputs 0–1. Keep s ≤ 0.75 and l in 0.25–0.85 so palettes never go neon. |
-| `WOOD_TONES` (color) | `{ name, h, s, l }` × 6 | Jitter h ±0.01 and l ±0.05 per item. |
+| `WOOD_TONES` (color) | `{ name, h, s, l }` × 6 | Jitter h ±0.01 and l ±0.05 per item (use `pickWood`). |
+| `pickWood(r)` (color) | `{ name, h, s, l }` with h ± 0.01 and l ± 0.05 | Exactly 3 draws (pick, h, l), the chair's order. Draw it even when unused so the stream stays stable. |
+| `STONE_TONES` (color) | `{ name, h, s, l }` × 4: white marble, black marble, travertine, grey terrazzo | Jitter l ±0.03. |
+| `FRAME_COLORS` (color) | `{ black, white, metal }` hexes | The chair's frame hexes; don't invent new near-blacks. |
+| `secondaryColor(mode, hue)` (color) | Hex for each of `SECONDARY_MODES` (`light`, `dark`, `complement`, `white`) | The chair's formulas; `white` is `#f4f1ea`. |
 | `edgeRadius(r, w, h, d)` (geometry) | Clamped bevel radius | Always use it; RoundedBoxGeometry breaks when r ≥ half the thinnest side. |
 | `puffy(w, h, d, r, mat, segments = 3)` (geometry) | Rounded box mesh centred on origin | Radius is clamped via `edgeRadius`. Geometry is non-indexed. Cost is 12·(2·segments+1)² triangles: 588 at 3, 300 at 2. Pass `segments` 2 for thin repeated bars (slats, rails) to stay under 6k. |
 | `roundedDiscGeometry(radius, h, edge, sides)` | Lathe disc with rounded rim, centred on y | `sides` 6–12 keeps it low poly. |
@@ -90,8 +111,21 @@ export default {
 | `superellipseShape(hx, hz, exponent, steps)` | Plan outline | exponent 2 = ellipse, 4 = squircle, 10 ≈ rectangle. |
 | `bentBandGeometry(w, h, t, bend)` | Vertical band curved in plan | Ends come forward by `bend`. |
 | `normalizeUVs(geo, size)` | Rescales meter UVs | Needed so patterns tile like on boxes. |
-| `legAnchors(p, fp)` (supports) | Leg top (x, z) list for 1–n legs | Uses `p.legCount`, `p.legThickness`; `fp = { width, depth, round?, exponent? }`. |
-| `buildLegs(p, mats, fp)` (supports) | Legs: pedestal (1), sled runners (2), splayed struts (3+) | `fp.top` = y the legs hold up. |
+| `beam(a, b, width, thickness, radius, mat, steps = 2)` (geometry) | Bar from Vector3 `a` to `b` with a rounded-rectangle section and flat ends; mesh positioned at the midpoint | Width runs along `normalize(dir × Y)` (x when vertical), thickness along `width × dir`: a bar along x has width in z and thickness in y. Extents are exact. 8·steps + 28 tris (44 at 2). Non-indexed; u along the bar, v around it, in meters. A slanted beam's corners reach `width/2·sin` past its end heights. |
+| `splitSpan(start, end, count, gap)` (layout) | `[{ center, size }]`, equal parts with `gap` between | `size` is floored at 0.001; check it before using tiny spans. |
+| `extrudeProfile(outline, thickness, bevel, plane = 'side')` (geometry) | Beveled slab from a `Shape` (holes allowed) or `Vector2[]` | `'side'`: outline in (z, y), thickness along x; `'front'`: outline in (x, y), thickness along z; centred on the extrusion axis. Outline extents are exact (`bevelOffset = −bevel`), so an outline from y = 0 stands on the floor. Place with rotations, never a negative scale. UVs in meters. |
+| `endPanelShape(width, height, { cut, cutWidth, cutHeight, steps = 6 })` (geometry) | Panel outline in (u, y), u in ±width/2, y 0…height, with a bottom-centre cut `'none' | 'arch' | 'v' | 'notch'` | Clamps `cutWidth ≤ 0.6·width` and `cutHeight ≤ 0.9·height` (feet ≥ 0.2·width). Feed it to `extrudeProfile`. |
+| `latheSolid(profile, sides)` (geometry) | Closed lathe solid from `[[r, y], …]` bottom → top | Adds axis points at the ends where r ≠ 0. Start at y = 0 to stand on the floor. Indexed; 2·sides·(points + 1) tris when both caps are added (incl. degenerate fan triangles). |
+| `boxProjectUVs(geometry, unit = 1)` (geometry) | Per-triangle planar UVs on the dominant normal axis, in `unit` meters | Returns a new geometry (disposing the input) when the input is indexed: always use the return value, e.g. `mesh.geometry = boxProjectUVs(mesh.geometry)`. Every part sharing a material must use the same UV convention; with `unit = 1`, `surface({ scale })` means repeats per meter. |
+| `legAnchors(p, fp)` (supports) | Leg top (x, z) list for 1–n legs | Uses `p.legCount`, `p.legThickness`; `fp = { width, depth, round?, exponent?, anchors? }`. Returns `fp.anchors` unchanged when present. Don't use n = 6 (rows misalign): use `rowAnchors`. |
+| `rowAnchors(length, depth, perRow, insetX, insetZ)` (supports) | Two straight rows at z = ±(depth/2 − insetZ), `perRow` legs over ±(length/2 − insetX) | Perimeter order: front row left → right, then back row right → left. Pass it as `fp.anchors` and set `legCount` to its length. |
+| `buildLegs(p, mats, fp)` (supports) | Legs: pedestal (1), sled runners (2), splayed struts (3+) | `fp.top` = y the legs hold up. The 3+ branch builds one `strut` per `legLines` entry. |
+| `legLines(p, fp)` (supports) | `[{ top, bottom, rTop, rBottom }]`, the exact axes `buildLegs` builds for `legCount ≥ 3` | Empty for `legCount < 3`, even with `fp.anchors`. Radial splay by default; `fp.splayAxes = [sx, sz]` splays along `normalize(sign(x)·sx, sign(z)·sz)` (a leg at x = 0 splays in z only). Pass the same `fp` as to `buildLegs`. |
+| `pointOnLeg(line, y)` (supports) | Point on a leg axis at height y | Linear. Use it for every rail, apron or shelf end so parts meet splayed legs. |
+| `buildStretchers(lines, kind, y, { radius, sides = 6, profile = 'round', stagger = 0 }, mat)` (supports) | Rails between leg axes at y: `'none' | 'ring' | 'perimeter' | 'h' | 'ends' | 'cross'` | Lines in perimeter order. `ring` is a closed tube (32 segments). `perimeter` raises rails running mostly along z by `stagger`. `h`/`ends` throw unless ≥ 2 legs sit at z > 0 and ≥ 2 at z < 0: resolve 3-leg fallbacks in params. `cross` adds a hub disc (2.5·radius). `profile: 'square'` uses `beam` (44 tris per rail). |
+| `buildApron(lines, { top, height, thickness, setback = 0, edges = 'all', radius = 0.004 }, mat)` (supports) | One `beam` per consecutive leg pair, top edge at `top` | `edges`: `'all'`, `'long'` (along x), `'short'`. `setback` moves each rail toward the centre. Two lines give one rail. |
+| `buildPedestal({ top, base = 'disc', baseRadius, baseHeight, baseTaper = 0.5, columnRadius, columnSides = 10, sleeve, cap, armWidth = 1.6·columnRadius }, mat)` (supports) | Base (`disc`; `cone`; `cross`, 4 arms at 45°; `tripod`, one arm to −z and two at ±60° from +z), column, optional `sleeve { radius, height }` and `cap { radius, height }` | Bottom at y = 0; cap top (or column top) at `top`. Arms lie on the floor and reach `baseRadius`. `buildLegs`' 1-leg branch does not use it (chair golden). |
+| `buildTrestle({ length, depth, top, kind, inset, footLength, footHeight, beamWidth, postDepth = beamWidth, cleatHeight, cleatLength = 0.8·depth, stretcherHeight, stretcher = true, radius = 0.006 }, mat)` (supports) | Two `beam` frames at x = ±(length/2 − inset) (foot, posts, cleat) plus one long stretcher at z = 0 | `kind` `'I'`: one `beamWidth × postDepth` post. `'A'`: two slanted posts (±0.38·footLength → ±0.2·cleatLength) and a crossbar at `stretcherHeight`. `'X'`: crossed beams; the stretcher sits at the crossing and `stretcherHeight` is ignored. Slanted ends are pulled in so corners stay within y 0…`top`. 308–484 tris. |
 | `bentwoodFoot(path, radius, sides, mat)` (supports) | Ferrule foot from y = 0 up past the open end of a tube leg | `path` is the tube curve (`mesh.geometry.parameters.path`); the end centre must sit `radius` above the floor. 4·sides triangles. |
 | `buildCurvyLegs(p, mats, fp)` (supports) | Bentwood legs (sabre/cabriole/bow) on ferrule feet + optional ring | Needs `p.legCurve`, `p.hasRing`, `p.ringHeight`. Feet stand on y = 0 exactly. |
 | `mergeByMaterial(root)` (merge) | One mesh per material | Disposes source geometries; converts indexed → non-indexed. |

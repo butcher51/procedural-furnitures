@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { isDeepStrictEqual } from 'node:util';
-import { fixedGroups, generateItem, rerollableGroups } from '../../src/core/item.js';
+import { fixedGroups, generateItem, groupApplies, rerollableGroups } from '../../src/core/item.js';
 import { createRng } from '../../src/core/rng.js';
 import * as registry from '../../src/furniture/registry.js';
 import { checkInvariants } from '../helpers/invariants.js';
@@ -105,12 +105,18 @@ for (const definition of registry.list()) {
     test(`${type}: re-rolling ${groupId} changes only ${groupId}${allowedLater.size ? ` and its readers (${[...allowedLater].join(', ')})` : ''}`, () => {
       const violations = [];
       let visible = 0;
+      let applying = 0;
       for (const n of numbers) {
         const once = generateItem(definition, scene, n, { [groupId]: 1 });
         const twice = generateItem(definition, scene, n, { [groupId]: 2 });
-        if (changedFields(base.get(n), once).some((field) => ownFields.has(field))) visible++;
+        const applies = groupApplies(definition, groupId, base.get(n));
+        if (applies) {
+          applying++;
+          if (changedFields(base.get(n), once).some((field) => ownFields.has(field))) visible++;
+        }
         for (const [label, params] of [['1', once], ['2', twice]]) {
           for (const field of changedFields(base.get(n), params)) {
+            if (!applies && !ownFields.has(field)) violations.push(`#${n} x${label}: ${groupId} does not apply but ${field} changed`);
             const index = owner.get(field);
             const ownerId = definition.groups[index]?.id;
             if (index === undefined) violations.push(`#${n} x${label}: unowned field "${field}" changed`);
@@ -120,7 +126,8 @@ for (const definition of registry.list()) {
         }
       }
       assert.deepStrictEqual(violations.slice(0, 30), [], `${violations.length} isolation violations`);
-      const rate = visible / numbers.length;
+      if (applying === 0) return;
+      const rate = visible / applying;
       assert.ok(rate >= minRate, `${type}.${groupId}: only ${(rate * 100).toFixed(1)}% of re-rolls change a ${groupId} field (need ${minRate * 100}%)`);
     });
   }

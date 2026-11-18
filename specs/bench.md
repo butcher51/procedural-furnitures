@@ -305,3 +305,15 @@ What I changed:
 6. `strokeShape` and `buildFramedBack` stay bench-local in wave 1 (R7). The chair is not switched.
 7. Spelling: the palette describe label is now "Colours", matching the group label.
 8. Open questions 2, 4, 7 and 8 are struck; 1, 3, 5, 6 and 9 are annotated.
+
+### Kit landed (backlog 2.8): notes for the generator engineer
+
+All helpers this spec uses are in core on branch `kit-additions`. Differences from the text above:
+
+1. `legLines` (and `buildLegs`' strut branch) only run for `legCount ≥ 3`, also when `fp.anchors` is given. Set
+   `legCount` to the anchor count (4 or 6) for staked, platform and upholstered legs; `buildLegs` then builds one strut per
+   anchor.
+2. `beam(a, b, width, thickness, radius, mat)`: for a slat along x, `width` is its z depth and `thickness` its y height.
+3. `buildTrestle` kind `'I'` takes `postDepth` for the post's z depth; the foot, cleat and long stretcher are
+   `beamWidth` wide. Pass `stretcher: false` if the plank bench should not get the long rail.
+4. `buildApron` takes an optional `radius` (default 0.004); `edges: 'long'` keeps only the rails along x.

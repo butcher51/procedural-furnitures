@@ -394,3 +394,15 @@ What I changed:
 6. `roundedPolygonShape` and `buildFeet` stay sofa-local (R7).
 7. The 4th material role (accent pillows) is approved (R5). `cushionSegments` matches ruling R3.
 8. Open questions 6, 7 and 8 are struck; 1–5 and 9 are annotated.
+
+### Kit landed (backlog 2.8): notes for the generator engineer
+
+All helpers this spec uses are in core on branch `kit-additions`. Differences from the text above:
+
+1. `boxProjectUVs(geometry, unit)` returns a new geometry and disposes the input when the input is indexed (`extrudeUp`
+   output is non-indexed, `puffy` is non-indexed). Always assign the return value: `mesh.geometry = boxProjectUVs(mesh.geometry, 1)`.
+   With `unit = 1`, `surface({ scale: patternScale })` gives `patternScale` repeats per meter.
+2. `legLines`/`buildLegs`' strut branch only run for `legCount ≥ 3`, also with `fp.anchors`. Set `legCount` to the
+   anchor count (4 or 6) when passing `rowAnchors`.
+3. `splitSpan` floors part sizes at 0.001; a sectional run shorter than its gaps would give near-zero cushions, so keep
+   the existing clamps.

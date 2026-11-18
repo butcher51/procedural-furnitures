@@ -397,3 +397,18 @@ What I changed:
    - The diner ring with spokes and the slab stretcher stay stool-local (R7).
 6. `floorFlush` is rejected: the sink is already bounded at 9.1 mm.
 7. Open questions 7 and 8 are struck (helper list, R4). The rest are annotated with recommendations.
+
+### Kit landed (backlog 2.8): notes for the generator engineer
+
+All helpers this spec uses are in core on branch `kit-additions`, including `latheSolid` (A7): the spool and barrel drum
+profiles can be built now (`latheSolid([[r, y], …], 12)`, about 2·12·(points + 1) tris), so the straight-only fallback
+is not needed. Differences from the text above:
+
+1. `buildStretchers` `'h'` and `'ends'` throw unless at least 2 legs sit at z > 0 and 2 at z < 0. With `legLines` from
+   `legAnchors`, 3 legs never qualify, so the footrest params must resolve 3-leg stools to `ring` or `perimeter` (as the
+   spec's "resolve against shape" rule says).
+2. `buildStretchers(…, 'ring', …)` uses `sides` (default 6) and 32 segments; a double ring is a second call.
+3. `buildPedestal` `disc` uses a fixed 0.008 rim; the hub is `cap` and the column ends at `top − cap.height`. The sleeve
+   is clamped below the cap.
+4. `appliesTo` on `footrest`: the re-roll test now measures the change rate only where it applies and, elsewhere,
+   requires a footrest re-roll to change no field outside the footrest group. With neutral values that holds trivially.

@@ -24,3 +24,12 @@ export function generateItem(definition, sceneSeed, number, rerolls = {}, dna = 
 export function buildItem(definition, params, kit) {
   return mergeByMaterial(groupParts(definition.build(params, kit)));
 }
+
+export function groupApplies(definition, groupId, params) {
+  const group = definition.groups.find((g) => g.id === groupId);
+  return group?.appliesTo ? group.appliesTo(params) !== false : true;
+}
+
+export function appliedGroups(definition, params) {
+  return rerollableGroups(definition).filter((id) => groupApplies(definition, id, params));
+}

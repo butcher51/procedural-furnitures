@@ -227,3 +227,11 @@ The product owner approved all specs, rulings and recommendations ("approve all"
 5. Style sets as specified: stool keeps diner and slab; sofa keeps `midcentury`; `chaise` is a standalone chaise longue; park benches painted in 20 % of seeds.
 6. Deferred: corner sectional, Aalto bentwood stool, stool backrests, 6-leg tables, glass tops.
 7. UI per `specs/ui.md`: in-place solo, history policy, ensembles as a grid layout option, counter + `‹` instead of a filmstrip.
+
+## Backlog 2.8 status
+
+Implemented on branch `kit-additions`: A1–A9 (including A7 `latheSolid`), B1, B2 and C1–C4. `groupApplies` and
+`appliedGroups` are in `src/core/item.js`, and `tests/unit/reroll.test.js` measures the change rate only where
+`appliesTo` is true (elsewhere a re-roll may change only the group's own fields). Chair params and geometry goldens are
+byte-identical; `tests/regressions/chair.json` stays `[]`. Per-spec deviations are listed under "Kit landed (backlog
+2.8)" in each spec's architect review. The panel's ⟳ hiding remains with backlog 3.1.
