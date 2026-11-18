@@ -41,5 +41,5 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(port, () => {
-  console.log(`Chair generator running at http://localhost:${port}`);
+  console.log(`Procedural furniture running at http://localhost:${port}`);
 });
