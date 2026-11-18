@@ -133,6 +133,27 @@ test('geometry invariants hold over 500 seeds and budgets are met', () => {
   assert.ok(maxDraws <= 4, `draw calls ${maxDraws}`);
 });
 
+test('cushion patterns come from the shader pool with the weighted mix and wood carries grain', () => {
+  const kinds = {};
+  for (const p of all) {
+    const label = p.pattern === 'none' ? 'none' : p.pattern.kind === 'linen' ? p.pattern.texture : p.pattern.kind;
+    kinds[label] = (kinds[label] ?? 0) + 1;
+    if (p.woodName) assert.ok(['fine', 'plain', 'bold'].includes(p.grain), `${p.seed} grain ${p.grain}`);
+    else assert.equal(p.grain, 'none');
+  }
+  assert.deepEqual(Object.keys(kinds).sort(), ['boucle', 'dots', 'floral', 'gingham', 'herringbone', 'linen', 'none', 'ticking']);
+  assert.ok(kinds.linen + kinds.none + kinds.boucle > 0.5 * SEEDS, 'plain fabrics stay most common');
+  assert.ok(kinds.dots + kinds.floral + kinds.gingham + kinds.ticking + kinds.herringbone < 0.45 * SEEDS, 'loud patterns stay a minority');
+});
+
+test('pattern re-roll changes only the pattern field', () => {
+  for (const n of numbers.slice(0, 100)) {
+    const a = params(n);
+    const b = params(n, { pattern: 1 });
+    for (const key of Object.keys(a)) if (key !== 'pattern') assert.deepStrictEqual(a[key], b[key], `${n} ${key}`);
+  }
+});
+
 test('build is pure and releases its textures', () => {
   const kit = createKit();
   for (const n of numbers.slice(0, 60)) {
