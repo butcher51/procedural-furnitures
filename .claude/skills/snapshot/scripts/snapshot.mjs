@@ -72,7 +72,7 @@ try {
   await mkdir(outDir, { recursive: true });
   const errors = [];
 
-  const single = await browser.newPage({ viewport: { width: size, height: size } });
+  const single = await browser.newPage({ viewport: { width: 1100, height: 1100 }, deviceScaleFactor: size / 1100 });
   single.on('pageerror', (e) => errors.push(e.message));
   const shots = [];
   for (let item = first; item < first + count; item++) {

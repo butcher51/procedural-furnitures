@@ -91,6 +91,28 @@ export function createStage(viewport) {
     invalidate({ shadow: true });
   }
 
+  function frameObject(object, { margin = 1.12 } = {}) {
+    const scale = object.scale.clone();
+    object.scale.setScalar(1);
+    object.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(object);
+    object.scale.copy(scale);
+    object.updateMatrixWorld(true);
+    if (box.isEmpty()) return;
+    const sphere = box.getBoundingSphere(new THREE.Sphere());
+    const vFov = THREE.MathUtils.degToRad(camera.fov) / 2;
+    const hFov = Math.atan(Math.tan(vFov) * Math.min(camera.aspect, 1));
+    const distance = (sphere.radius * margin) / Math.sin(Math.min(vFov, hFov));
+    const direction = new THREE.Vector3(1.45, 1.1, 1.95).normalize();
+    overview.target.copy(sphere.center);
+    overview.position.copy(sphere.center).addScaledVector(direction, distance);
+    controls.maxDistance = Math.max(controls.maxDistance, distance * 3);
+    tween = null;
+    camera.position.copy(overview.position);
+    controls.target.copy(overview.target);
+    invalidate({ shadow: true });
+  }
+
   function moveTo(position, target) {
     if (!animateMoves) {
       tween = null;
@@ -177,6 +199,7 @@ export function createStage(viewport) {
     camera,
     controls,
     layout,
+    frameObject,
     resetCamera,
     focus,
     setInset,

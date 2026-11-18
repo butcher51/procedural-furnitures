@@ -294,6 +294,7 @@ async function populateCurrent({ zoomToItem = false } = {}) {
   if (!ok || run !== epoch) return;
 
   loaderUi.end();
+  if (single && solo.items[0]) stage.frameObject(solo.items[0].object);
   stage.invalidate({ shadow: true });
   const showroom = room();
   const count = showroom.items.length;
