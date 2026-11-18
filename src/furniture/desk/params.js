@@ -13,7 +13,7 @@ const at = (u) => ({ next: () => u });
 const pickU = (u, weights) => weightedPick(at(u), weights);
 const mm = (v) => Math.round(v * 1000) / 1000;
 
-const WIDTH = { writing: [0.9, 1.3], pedestal: [1.4, 1.8], trestle: [1.2, 1.8], standing: [1.0, 1.6], panel: [1.0, 1.6] };
+const WIDTH = { writing: [0.9, 1.3], pedestal: [1.4, 1.8], trestle: [1.3, 1.8], standing: [1.0, 1.6], panel: [1.0, 1.6] };
 const DEPTH = { writing: [0.5, 0.65], pedestal: [0.65, 0.8], trestle: [0.62, 0.75], standing: [0.6, 0.8], panel: [0.55, 0.75] };
 const THICKNESS = { writing: [0.018, 0.028], pedestal: [0.025, 0.04], trestle: [0.035, 0.05], standing: [0.022, 0.03], panel: [0.03, 0.05] };
 const ADDON_WEIGHTS = {
@@ -147,7 +147,7 @@ function trestleBase(u, t, L) {
   const { topWidth: W, topDepth: D } = t;
   const trestleKind = pickU(u.tKind, { I: 0.45, A: 0.4, X: 0.15 });
   const beamWidth = lerp([0.06, 0.1], u.beam);
-  const trestleInset = Math.min(lerp([0.12, 0.3], u.tInset), 0.18 * W);
+  const trestleInset = Math.max(0.08, Math.min(lerp([0.12, 0.3], u.tInset), 0.18 * W, (W - beamWidth - KNEE_MIN - 0.3) / 2));
   const fi = W / 2 - trestleInset - beamWidth / 2;
   const out = {
     supportKind: 'trestle', trestleKind, trestleInset, beamWidth,
@@ -156,7 +156,7 @@ function trestleBase(u, t, L) {
     trestleStretcherHeight: trestleKind === 'X' ? 0 : Math.min(lerp([0.1, 0.2], u.tStretch), 0.215 - beamWidth / 2),
   };
   const room = 2 * fi - KNEE_MIN;
-  const boxed = u.layout < 0.6 && room >= 0.3;
+  const boxed = room >= 0.3 - 1e-6;
   const trestleBackRail = boxed ? u.backRail < 0.5 : true;
   const trestleRailHeight = lerp(boxed ? [0.14, 0.24] : [0.2, 0.3], u.railH);
   if (!boxed) return { ...out, trestleBackRail, trestleRailHeight };
