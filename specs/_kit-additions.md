@@ -215,3 +215,15 @@ triangle counts).
 3. Update the furniture-kit skill (catalogue, R1–R7 conventions, `appliesTo` in the contract table) and
    `plan/02-architecture.md` (contract, rollStyle).
 4. Hand the reroll test change (R2) to the test-engineer and the panel change (R2) to the ui-engineer (3.1).
+
+## Human gate 2.7 — approved 2026-11-18
+
+The product owner approved all specs, rulings and recommendations ("approve all"):
+
+1. R1 rerollable style for new types via `rollStyle`; chair style stays fixed.
+2. R2 group `appliesTo(params)`.
+3. R3 `beam` for thin bars; no 1-segment bevels.
+4. B2 `buildLegs` refactor, gated on byte-identical chair goldens.
+5. Style sets as specified: stool keeps diner and slab; sofa keeps `midcentury`; `chaise` is a standalone chaise longue; park benches painted in 20 % of seeds.
+6. Deferred: corner sectional, Aalto bentwood stool, stool backrests, 6-leg tables, glass tops.
+7. UI per `specs/ui.md`: in-place solo, history policy, ensembles as a grid layout option, counter + `‹` instead of a filmstrip.

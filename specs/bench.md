@@ -130,7 +130,7 @@ Note on `backWidth` for park: the back boards span the full seat length, the sam
 
 | Name | Range / set | Distribution | Depends on | Group |
 |---|---|---|---|---|
-| `seatMaterial` | Pk wood 0.65 / painted 0.35 · Gd wood 0.6 / painted 0.4 · Pl wood · Pf wood · Up fabric | weighted pick | style | finish |
+| `seatMaterial` | Pk wood 0.8 / painted 0.2 · Gd wood 0.6 / painted 0.4 · Pl wood · Pf wood · Up fabric | weighted pick | style | finish |
 | `woodName` | `WOOD_TONES` name, h jitter ±0.01, l jitter ±0.05; null when nothing on the item is wood | pick | — | finish |
 | `seatColor` | wood: `hsl(woodH, s, woodL + 0.04)` · painted: `paintColor` (Gd painted: 50 % `#efefea` white) · fabric: `fabricColor` | derived | seatMaterial, palette | finish |
 | `seatSecondary` | wood: `hsl(woodH, s, woodL − 0.04)` · fabric: `fabricSecondary` · painted: = seatColor | derived | seatMaterial, palette | finish |
@@ -275,7 +275,7 @@ Top-level `swatches` is the same list as the palette row.
    *Architect: later. Storage after the wave 2 `fronts.js`; picnic with wave 4 ensembles.*
 7. ~~**Bevel level.**~~ Answered by ruling R3: no 1-segment `puffy`. Slats are `beam`s (2-step rounded long edges, about 44 tris), which is cheaper than 1 segment and still soft.
 8. ~~**Kit additions ownership.**~~ Answered in `_kit-additions.md`: `rowAnchors` and the `buildLegs` options are core (B1, B2); `extrudeSide` is merged into `extrudeProfile` (A5); `strokeShape` and `buildFramedBack` are bench-local in wave 1, and the chair keeps `buildBackrest`.
-9. **Painted park slats** (35 %, muted paint colour): is this a welcome variety, or should park seats always be wood so the frame/slat contrast stays the style's signature?
+9. ~~**Painted park slats** (35 %, muted paint colour): is this a welcome variety, or should park seats always be wood so the frame/slat contrast stays the style's signature?~~ Decided at gate 2.7: painted in 20 % of park benches.
    *Architect: design call for the human. Slight preference for lowering painted to 0.2, so the wood-on-iron look stays the norm.*
 
 ## Architect review
