@@ -142,8 +142,8 @@ function buildDrum(p, mats) {
   if (p.drumBase === 'feet') {
     const legs = legObject(p);
     const footprint = {
-      width: radii.bottom * 1.6 + p.legThickness * 2.4,
-      depth: radii.bottom * 1.6 + p.legThickness * 2.4,
+      width: radii.bottom * 2 + p.legThickness * 0.6,
+      depth: radii.bottom * 2 + p.legThickness * 0.6,
       top: lift + 0.005,
       round: true,
     };

@@ -17,7 +17,7 @@ const params = (n, rerolls = {}) => generateItem(stool, SCENE, n, rerolls);
 const all = numbers.map((n) => params(n));
 
 const RANGES = {
-  bar: { seatHeight: [0.72, 0.8], seatWidth: [0.34, 0.44], seatThickness: [0.03, 0.06], legThickness: [0.025, 0.045], legTaper: [0.6, 1] },
+  bar: { seatHeight: [0.72, 0.8], seatWidth: [0.34, 0.44], seatThickness: [0.03, 0.06], legThickness: [0.032, 0.05], legTaper: [0.6, 1] },
   counter: { seatHeight: [0.6, 0.68], seatWidth: [0.36, 0.46], seatThickness: [0.03, 0.06], legThickness: [0.03, 0.05], legTaper: [0.7, 1] },
   diner: { seatHeight: [0.6, 0.8], seatWidth: [0.36, 0.44], seatThickness: [0.02, 0.035], columnRadius: [0.022, 0.035], baseRadius: [0.19, 0.26], hubRadius: [0.06, 0.1] },
   milking: { seatHeight: [0.26, 0.45], seatWidth: [0.24, 0.36], seatThickness: [0.04, 0.07], legThickness: [0.035, 0.055], legTaper: [0.55, 0.85] },

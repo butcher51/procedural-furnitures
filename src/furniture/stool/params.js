@@ -1,4 +1,5 @@
-import { hsl, pickWood, secondaryColor, SECONDARY_MODES } from '../../core/color.js';
+import { hsl, pickWood } from '../../core/color.js';
+import { capSaturation, fabricColor, harmoniousSecondary, HARMONY_MODES, paintColor, shade } from '../../core/palette.js';
 import { rollStyle, weightedPick } from '../../core/rng.js';
 
 export const STYLES = { bar: 0.25, counter: 0.2, diner: 0.15, milking: 0.15, drum: 0.15, slab: 0.1 };
@@ -109,7 +110,7 @@ function barShape(r) {
   const count = weightedPick(r, [[4, 0.75], [3, 0.25]]);
   return {
     seatHeight, ...outline, seatThickness, puff, hasCushion, cushionThickness,
-    ...legSet(r, { count, thickness: [0.025, 0.045], sides: [4, 6, 8], taper: [0.6, 1], splay: [0.04, 0.09], height }),
+    ...legSet(r, { count, thickness: count === 3 ? [0.038, 0.05] : [0.032, 0.048], sides: [4, 6, 8], taper: [0.6, 1], splay: [0.04, 0.09], height }),
   };
 }
 
@@ -185,18 +186,18 @@ function drumShape(r) {
   };
   if (drumBase !== 'feet') return shape;
   const count = r.pick([3, 4]);
-  return { ...shape, ...legSet(r, { count, thickness: [0.03, 0.045], sides: [6, 8], taper: [0.6, 0.9], splay: [0, 0.02], height: r.range(0.06, 0.12) }) };
+  return { ...shape, ...legSet(r, { count, thickness: [0.055, 0.075], sides: [6, 8], taper: [0.8, 1], splay: [0, 0.01], height: r.range(0.1, 0.15) }) };
 }
 
 function slabShape(r) {
   const seatHeight = r.range(0.22, 0.46);
-  const outline = seatOutline(r, 'rect', r.range(0.4, 0.6), [0.24, 0.34]);
+  const outline = seatOutline(r, 'rect', r.range(0.4, 0.6), [0.26, 0.34]);
   const seatThickness = r.range(0.025, 0.045);
   const puff = r.range(0.004, 0.012);
   const legHeight = seatHeight - seatThickness;
   const slabThickness = r.range(0.02, 0.04);
   const slabInset = r.range(0.02, 0.08);
-  const slabCutout = weightedPick(r, [['none', 0.4], ['arch', 0.4], ['notch', 0.2]]);
+  const slabCutout = weightedPick(r, [['none', 0.12], ['arch', 0.6], ['notch', 0.28]]);
   const cutHeight = r.range(0.2, 0.4) * legHeight;
   const archWidth = outline.seatDepth * r.range(0.4, 0.6);
   const notchWidth = r.range(0.04, 0.08);
@@ -210,10 +211,10 @@ function slabShape(r) {
 const SHAPES = { bar: barShape, counter: counterShape, diner: dinerShape, milking: milkingShape, drum: drumShape, slab: slabShape };
 
 const FOOTREST_KINDS = {
-  bar: [['ring', 0.8], ['none', 0.2]],
+  bar: [['ring', 0.85], ['none', 0.15]],
   counter: [['perimeter', 0.5], ['h', 0.25], ['ring', 0.15], ['none', 0.1]],
   diner: [['pedestalRing', 0.85], ['none', 0.15]],
-  slab: [['stretcher', 0.6], ['none', 0.4]],
+  slab: [['stretcher', 0.7], ['none', 0.3]],
 };
 
 export function footrestApplies(p) {
@@ -224,6 +225,7 @@ function footrestFor(r, style, s) {
   if (style === 'milking' || style === 'drum') return { ...NEUTRAL_FOOTREST };
   let kind = weightedPick(r, FOOTREST_KINDS[style]);
   if ((kind === 'perimeter' || kind === 'h') && s.legCount !== 4) kind = 'ring';
+  if (style === 'slab' && s.slabCutout === 'none') kind = 'stretcher';
   const offset = r.range(0.4, 0.47);
   const slabFraction = r.range(0.25, 0.5);
   const ringRadius = r.range(0.008, 0.013);
@@ -273,28 +275,29 @@ export function generateStoolParams(g) {
   const footrest = g.roll('footrest', (r) => footrestFor(r, style, shape));
 
   const palette = g.roll('palette', (r) => {
-    const hue = r.next();
-    const sat = r.range(0.35, 0.75);
-    const light = r.range(0.42, 0.62);
-    const mode = r.pick(SECONDARY_MODES);
-    const accentLight = r.range(0.3, 0.55);
+    const mood = weightedPick(r, [['neutral', 0.3], ['muted', 0.5], ['bold', 0.2]]);
+    const cushion = fabricColor(r, { mood });
+    const mode = r.pick(HARMONY_MODES);
+    const accent = paintColor(r);
     return {
-      cushionColor: hsl(hue, sat, light),
-      cushionSecondary: secondaryColor(mode, hue),
-      bodyColor: hsl(hue, sat * 0.85, light - 0.12),
-      accentColor: hsl(hue, 0.4, accentLight),
+      cushionColor: cushion.hex,
+      cushionSecondary: harmoniousSecondary(cushion, mode).hex,
+      bodyColor: shade(cushion, -0.1, 0.85).hex,
+      accentColor: accent.hex,
     };
   });
 
+  const roundCushion = shape.seatShape === 'round' && (style === 'diner' || style === 'drum' || shape.hasCushion);
   const pattern = g.roll('pattern', (r) => ({
-    pattern: weightedPick(r, [['solid', 0.5], ['stripes', 0.3], ['checker', 0.2]]),
+    pattern: roundCushion ? 'solid' : weightedPick(r, [['solid', 0.5], ['stripes', 0.3], ['checker', 0.2]]),
     patternScale: r.int(3, 9),
     stripeDirection: r.pick(['horizontal', 'vertical']),
   }));
 
   const finish = g.roll('finish', (r) => {
     const isWood = r.chance(WOOD_CHANCE[style]);
-    const other = style === 'diner' ? weightedPick(r, [['metal', 0.7], ['black', 0.2], ['white', 0.1]]) : r.pick(['black', 'white', 'metal', 'match']);
+    let other = style === 'diner' ? weightedPick(r, [['metal', 0.7], ['black', 0.2], ['white', 0.1]]) : r.pick(['black', 'white', 'metal', 'match']);
+    if (style === 'drum' && other === 'white') other = 'black';
     const wood = pickWood(r);
     const panRoll = r.next();
     const planksRoll = r.chance(0.4);
@@ -304,9 +307,9 @@ export function generateStoolParams(g) {
     const frameMode = isWood ? 'wood' : other;
     const frameColor = {
       wood: hsl(wood.h, wood.s, wood.l),
-      black: hsl(0.67, 0.05, 0.17 + tint * 0.03),
-      white: hsl(0.12, 0.1, 0.93 + tint * 0.02),
-      metal: hsl(0.6, 0.06, 0.66 + tint * 0.05),
+      black: capSaturation(0.67, 0.05, 0.17 + tint * 0.03).hex,
+      white: capSaturation(0.12, 0.1, 0.93 + tint * 0.02).hex,
+      metal: capSaturation(0.6, 0.06, 0.66 + tint * 0.05).hex,
       match: palette.accentColor,
     }[frameMode];
 
