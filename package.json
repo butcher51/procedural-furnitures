@@ -1,9 +1,17 @@
 {
-  "name": "procedural-chairs",
+  "name": "procedural-furnitures",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test \"tests/unit/**/*.test.js\"",
+    "snapshot": "node .claude/skills/snapshot/scripts/snapshot.mjs",
+    "verify": "node .claude/skills/verify-furniture/scripts/verify.mjs",
+    "metrics": "node scripts/metrics.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.49.1",
+    "three": "0.170.0"
   }
 }

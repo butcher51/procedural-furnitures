@@ -2,6 +2,14 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { generateParams, buildChair, disposeObject } from './chair.js';
 
+// --- URL flags ---------------------------------------------------------------
+
+const query = new URLSearchParams(location.search);
+const SINGLE = query.get('view') === 'single';
+const ANIMATE = query.get('anim') !== '0';
+const ITEM = Math.max(1, parseInt(query.get('item'), 10) || 0);
+const HAS_ITEM = query.has('item');
+
 // --- Scene setup -----------------------------------------------------------
 
 const viewport = document.getElementById('viewport');
@@ -27,6 +35,11 @@ controls.enableDamping = true;
 controls.minDistance = 0.8;
 controls.maxDistance = extent * 4;
 controls.maxPolarAngle = Math.PI * 0.49;
+if (SINGLE) {
+  camera.position.set(1.45, 1.1, 1.95);
+  controls.target.set(0, 0.42, 0);
+  document.querySelector('details').hidden = true;
+}
 
 scene.add(new THREE.HemisphereLight('#ffffff', '#d9d2c5', 1.4));
 const sun = new THREE.DirectionalLight('#ffffff', 2.2);
@@ -111,25 +124,31 @@ async function generate(seed) {
   }
   chairs = [];
   marker.visible = false;
+  delete document.documentElement.dataset.ready;
   seedInput.value = seed;
-  history.replaceState(null, '', `?seed=${encodeURIComponent(seed)}`);
+  const url = new URL(location.href);
+  if (url.searchParams.get('seed') !== seed) url.searchParams.delete('item');
+  url.searchParams.set('seed', seed);
+  history.replaceState(null, '', url.search);
 
   // Build in time-sliced batches so the loader stays animated
-  const total = GRID_SIZE * GRID_SIZE;
-  const center = (GRID_SIZE - 1) / 2;
+  const size = SINGLE ? 1 : GRID_SIZE;
+  const total = size * size;
+  const center = (size - 1) / 2;
   const built = [];
   setLoader(0, total);
   await nextFrame();
   let sliceStart = performance.now();
-  for (let row = 0; row < GRID_SIZE; row++) {
-    for (let col = 0; col < GRID_SIZE; col++) {
-      const params = generateParams(`${seed}-${built.length + 1}`);
+  for (let row = 0; row < size; row++) {
+    for (let col = 0; col < size; col++) {
+      const number = SINGLE ? ITEM : built.length + 1;
+      const params = generateParams(`${seed}-${number}`);
       const object = buildChair(params);
       object.position.set((col - center) * SPACING, 0, (row - center) * SPACING);
       object.userData.chairIndex = built.length;
       object.visible = false;
       const ring = Math.max(Math.abs(row - center), Math.abs(col - center));
-      built.push({ object, params, ring, revealAt: 0, popped: false });
+      built.push({ object, params, number, ring, revealAt: 0, popped: false });
 
       if (performance.now() - sliceStart > FRAME_BUDGET) {
         setLoader(built.length, total);
@@ -148,11 +167,15 @@ async function generate(seed) {
   const start = performance.now();
   for (const c of built) {
     c.revealAt = start + c.ring * RING_DELAY;
-    c.object.scale.setScalar(0.001);
+    c.object.scale.setScalar(ANIMATE ? 0.001 : 1);
+    c.object.visible = !ANIMATE;
+    c.popped = !ANIMATE;
     scene.add(c.object);
   }
   chairs = built;
-  select(Math.floor(total / 2));
+  select(!SINGLE && HAS_ITEM && ITEM <= total ? ITEM - 1 : Math.floor(total / 2));
+  marker.visible = !SINGLE;
+  document.documentElement.dataset.ready = seed;
 }
 
 // Ease-out with overshoot: grows past full size, then settles back
@@ -172,11 +195,11 @@ function animatePops(now) {
 }
 
 function select(index) {
-  const { object, params } = chairs[index];
+  const { object, params, number } = chairs[index];
   marker.visible = true;
   marker.position.x = object.position.x;
   marker.position.z = object.position.z;
-  paramsTitle.textContent = `Chair ${index + 1} · ${params.seed}`;
+  paramsTitle.textContent = `Chair ${number} · ${params.seed}`;
   renderParams(params);
 }
 
@@ -261,4 +284,4 @@ seedInput.addEventListener('keydown', (e) => {
 });
 regenButton.addEventListener('click', () => generate(randomSeed()));
 
-generate(new URLSearchParams(location.search).get('seed') || randomSeed());
+generate(query.get('seed') || randomSeed());

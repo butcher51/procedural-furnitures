@@ -6,7 +6,7 @@ with clear handoffs and human checkpoints.
 
 ## Where we start from
 
-`C:\workspace\fun\procedural-chairs` is about 1,100 lines of vanilla JS. It has no build step, no tests and no git history.
+`procedural-chairs` (GitHub `butcher51/chair-generator` @ 1964083, imported as the P0 baseline commit) is about 1,100 lines of vanilla JS. It had no build step and no tests.
 
 | File | Role | What carries over |
 |---|---|---|
