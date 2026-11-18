@@ -1,5 +1,7 @@
 import * as THREE from 'three';
-import { beam, puffy, roundedDiscGeometry, strut, tube } from './geometry.js';
+import { beam, latheSolid, puffy, roundedDiscGeometry, strut, tube } from './geometry.js';
+import { splitSpan } from './layout.js';
+import { grainAlong } from './patterns.js';
 
 // Leg top positions (x, z) under a footprint. 3+ legs are spread on a
 // superellipse so rectangular footprints push legs towards the corners.
@@ -223,7 +225,7 @@ export function buildPedestal({ top, base = 'disc', baseRadius, baseHeight, base
   return group;
 }
 
-export function buildTrestle({ length, depth, top, kind = 'I', inset, footLength, footHeight, beamWidth, postDepth = beamWidth, cleatHeight, cleatLength = 0.8 * depth, stretcherHeight, stretcher = true, radius = 0.006 }, mat) {
+export function buildTrestle({ length, depth, top, kind = 'I', inset, footLength, footHeight, beamWidth, postDepth = beamWidth, cleatHeight, cleatLength = 0.8 * depth, stretcherHeight, stretcher = true, backRail = false, radius = 0.006 }, mat) {
   const group = new THREE.Group();
   const bar = (a, b, w, t) => group.add(beam(a, b, w, t, radius, mat));
   const frameX = length / 2 - inset;
@@ -264,5 +266,86 @@ export function buildTrestle({ length, depth, top, kind = 'I', inset, footLength
     }
   }
   if (stretcher) bar(v3(-frameX, railY, 0), v3(frameX, railY, 0), beamWidth, beamWidth);
+  if (backRail) {
+    const backY = top - cleatHeight - beamWidth / 2;
+    bar(v3(-frameX, backY, -zc), v3(frameX, backY, -zc), beamWidth, beamWidth);
+  }
+  return group;
+}
+
+const TURNED_PROFILES = {
+  classic: (R, h) => [
+    [0.7 * R, 0], [0.8 * R, 0.03 * h], [0.55 * R, 0.12 * h], [0.5 * R, 0.5 * h], [0.8 * R, 0.62 * h],
+    [0.55 * R, 0.72 * h], [0.9 * R, 0.8 * h], [0.9 * R, 0.9 * h], [R, h],
+  ],
+  simple: (R, h) => [[0.8 * R, 0], [0.9 * R, 0.06 * h], [0.62 * R, 0.5 * h], [0.9 * R, 0.94 * h], [R, h]],
+};
+
+const finialProfile = (R, f) => [[0.35 * R, 0], [0.25 * R, 0.18 * f], [0.6 * R, 0.5 * f], [0.45 * R, 0.82 * f], [0.12 * R, f]];
+
+export function turnedPost({ height, thickness, blocks = [], finial = 0, sides = 8, profiles = [] }, mat) {
+  const group = new THREE.Group();
+  const R = (thickness / 2) * 0.95;
+  const blockRadius = Math.min(0.006, thickness * 0.2);
+  const sorted = [...blocks].sort((a, b) => a[0] - b[0]);
+  let y = 0;
+  let segment = 0;
+  const turn = (y0, y1) => {
+    const h = y1 - y0;
+    if (h > 1e-6) {
+      const profile = (TURNED_PROFILES[profiles[segment]] ?? TURNED_PROFILES.classic)(R, h);
+      const lathe = new THREE.Mesh(latheSolid(profile, sides), mat);
+      lathe.position.y = y0;
+      group.add(lathe);
+      segment++;
+    }
+  };
+  for (const [y0, y1] of sorted) {
+    turn(y, y0);
+    group.add(beam(v3(0, y0, 0), v3(0, y1, 0), thickness, thickness, blockRadius, mat));
+    y = y1;
+  }
+  turn(y, height);
+  if (finial > 0) {
+    const knob = new THREE.Mesh(latheSolid(finialProfile(R, finial), sides), mat);
+    knob.position.y = height;
+    group.add(knob);
+  }
+  return grainAlong(group, 'y');
+}
+
+export function buildFeet(anchors, { kind = 'bun', height, radius, edge = 0.6 * radius, sides = 8 }, mat) {
+  return anchors.map(([x, z]) => {
+    if (kind === 'block') return beam(v3(x, 0, z), v3(x, height, z), radius * 2, radius * 2, Math.min(edge, radius * 0.4), mat);
+    if (kind !== 'bun') throw new Error(`buildFeet: unknown kind "${kind}"`);
+    const foot = new THREE.Mesh(roundedDiscGeometry(radius, height, edge, sides), mat);
+    foot.position.set(x, height / 2, z);
+    return grainAlong(foot, 'y');
+  });
+}
+
+export function buildFramedPanel({ width, postWidth, postDepth, postBottom = 0, postTop, rails = [], fill = { kind: 'none' }, puff }, mats) {
+  const group = new THREE.Group();
+  const postX = width / 2 - postWidth / 2;
+  const innerW = width - postWidth * 2;
+  const add = (a, b, w, t, mat) => group.add(beam(a, b, w, t, puff, mat));
+  for (const sx of [-1, 1]) add(v3(sx * postX, postBottom, 0), v3(sx * postX, postTop, 0), postWidth, postDepth, mats.frame);
+  for (const rail of rails) add(v3(-postX, rail.y, 0), v3(postX, rail.y, 0), rail.thickness, rail.height, mats.frame);
+  const { kind, count, from, to, thickness } = fill;
+  if (kind === 'slats') {
+    const pitch = innerW / count;
+    const slat = fill.width ?? Math.min(pitch * 0.5, 0.05);
+    for (let i = 0; i < count; i++) {
+      const x = -innerW / 2 + pitch * (i + 0.5);
+      add(v3(x, from, 0), v3(x, to, 0), slat, thickness, mats.fill);
+    }
+  } else if (kind === 'bars') {
+    const gap = (to - from) * 0.14;
+    for (const { center, size } of splitSpan(from, to, count, gap)) {
+      add(v3(-postX, center, 0), v3(postX, center, 0), thickness, Math.min(size, 0.05), mats.fill);
+    }
+  } else if (kind !== 'none') {
+    throw new Error(`buildFramedPanel: unknown fill "${kind}"`);
+  }
   return group;
 }

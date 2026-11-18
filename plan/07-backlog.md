@@ -3,11 +3,13 @@
 Each task is sized for one agent run and can become a GitHub issue for `claude-orchestrator`
 (label `agent:ready`). The **Agent** column names the `.claude/agents` role to put in the issue body.
 
-## Status (2026-11-18)
+## Status (2026-11-18, end of session)
 
-M0–M3 done. ★ Wave 1 approved (PR #8). Decisions at the gate:
-- Chair keeps its original (louder) colours for now so old links reproduce exactly.
-- Minor visual issues are deferred (list below); next is M3.5, then M4.
+- M0–M4 done. ★ Wave 1 approved (PR #8, merged). M3.5 (shader patterns, All view, smaller grids) merged (PR #9). ★ Wave 2 approved (PR #11, `wave2-integration` → main; includes PR #10 specs) — merge PR #11 if not yet merged.
+- Registered types: chair, stool, table, bench, sofa, shelf, cabinet, desk, bed (+ All view). 359 tests; invariants 500/500 per type; W6 wave-1 geometry hashes unchanged; 60 fps full grids (RTX 3070).
+- Decisions: chair keeps its original (louder) palette for link stability; minor visual issues deferred (list below); sofa keeps its pillows until a separate PR adopts core `pillow`.
+- Next (not started): choose between M5 wave 3 (lamps, plants & pots, rugs, wardrobe), M6 ensembles, or a polish pass over the deferred issues.
+- Process that worked: designers (parallel) → architect review + rulings → ★ gate → architect kit (parallel streams in worktrees) → generator engineers (parallel worktrees) → orchestrator merges + verify → visual-reviewer loop (≤ 3 rounds) → /code-review → ★ gate.
 
 ## M3.5 — Shader patterns & mixed showroom
 
@@ -27,6 +29,10 @@ M0–M3 done. ★ Wave 1 approved (PR #8). Decisions at the gate:
 - **Sofa:** pillow on L sectionals placed at the seat/return junction; chaise pillow edge-on and sinking into the cushion; pillows taller than a low back; bare back frame towering on armless pieces; faceted roll arms; boxy loveseat #38.
 - **Chair:** original palette is louder than the other types (kept on purpose for link stability).
 - **Patterns (from `reviews/patterns-2.md`):** speckle fades over the far half of long bench tops; pinstripe-like wood remains on some wide tops (table #5 right half, stool #13); a few dark tops still show little grain; very high-contrast dark mahogany (stool #7); faint dotted seam on white bench slats; loud dot/ground pairs (bench #11, All Stool 9); phone overview grid small with empty space above.
+- **Shelf (wave 2, `reviews/shelf-2.md`):** loud painted-frame accent backs (#32, fresh2 #9, #24); all-ochre tonal books (#35); sparse bays with tiny orbs; narrow 1-bay bookcases without a back read as columns; bold grain on leaning crate bases; pale narrow leaning units fade.
+- **Cabinet (wave 2, `reviews/cabinet-2.md`):** knobs still look lumpy; centred knob on short nightstand doors reads low; lip/brass on cream (#19); black-on-black fronts lose detail; wood-on-wood hardware invisible; fully open TV4/NS4 read as shelves; bold grain on thick industrial tops; thick painted tops on low TVs read as benches.
+- **Desk (wave 2, `reviews/desk-2.md`):** dark near-match ring pulls faint on dark wood; inlay can still read as a runner beside a riser (fresh2 #17); drawer-less panel desks read as tables/benches.
+- **Bed (wave 2, `reviews/bed-2.md`):** upper bunk casts a hard shadow slab on the backdrop; four-poster head-post shadow band across bedding; all-pale beds fade on the floor; busy duvet/upholstery hue pairs; some pale four-posters remain.
 
 ## M0 — Bootstrap
 

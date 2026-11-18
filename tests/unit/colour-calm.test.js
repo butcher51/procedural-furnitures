@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import * as THREE from 'three';
 import { colourIsCalm } from '../../src/core/palette.js';
+import { paintVertices } from '../../src/core/fill.js';
+import { createMaterials } from '../../src/core/materials.js';
 import * as registry from '../../src/furniture/registry.js';
 import { formatFailures, sweep } from '../helpers/sweep.js';
 
@@ -20,12 +23,24 @@ function paramColours(value, path, out) {
   return out;
 }
 
+function vertexColours(geometry) {
+  const colour = geometry?.attributes?.color;
+  if (!colour) return [];
+  const seen = new Set();
+  const c = new THREE.Color();
+  for (let i = 0; i < colour.count; i++) {
+    seen.add(`#${c.setRGB(colour.getX(i), colour.getY(i), colour.getZ(i)).getHexString()}`);
+  }
+  return [...seen];
+}
+
 function materialColours(object) {
   const out = [];
   object.traverse((node) => {
     for (const m of node.material ? [node.material].flat() : []) {
       if (m.color) out.push([`material ${m.name || m.type}`, `#${m.color.getHexString()}`]);
       for (const hex of m.userData?.pattern?.colors ?? []) out.push([`pattern ${m.userData.pattern.kind}`, hex]);
+      if (m.vertexColors) for (const hex of vertexColours(node.geometry)) out.push([`vertex colour (${m.userData?.role ?? m.type})`, hex]);
     }
   });
   return out;
@@ -46,6 +61,15 @@ test('loudColours finds neon in params and accepts calm ones', () => {
   assert.deepEqual(paramColours({ a: '#4DCB51', b: ['#2a2a2c', 'x'], c: { d: 1 } }, '', []), [['a', '#4dcb51'], ['b[0]', '#2a2a2c']]);
   const object = { traverse: () => {} };
   assert.equal(loudColours({ params: { a: '#4dcb51', b: '#2a2a2c' }, object }).length, 1);
+});
+
+test('loudColours reads vertex colours of vertex-colour materials as sRGB hex', () => {
+  const geometry = paintVertices(new THREE.BoxGeometry(1, 1, 1), (n) => (n.y > 0.5 ? '#4dcb51' : '#8a6f5a'));
+  assert.deepEqual(vertexColours(geometry).sort(), ['#4dcb51', '#8a6f5a']);
+  const decor = new THREE.Mesh(geometry, createMaterials().vertexColor());
+  assert.deepEqual(loudColours({ params: {}, object: decor }), ['vertex colour (decor) #4dcb51 is not calm']);
+  const plain = new THREE.Mesh(geometry, createMaterials().solid('#8a6f5a'));
+  assert.deepEqual(loudColours({ params: {}, object: plain }), []);
 });
 
 for (const definition of registry.list()) {

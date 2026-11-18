@@ -53,8 +53,10 @@ export function createStage(viewport) {
     if (shadow) shadowDirty = true;
   };
 
-  function layout({ side, floor, divisions, scale, single, fit = 1 }) {
-    const extent = Math.max(side, 0) / 2 + 1;
+  function layout({ sideX, sideZ, floorX, floorZ, divisions, scale, single, fit = 1 }) {
+    const extentX = Math.max(sideX, 0) / 2 + 1;
+    const extentZ = Math.max(sideZ, 0) / 2 + 1;
+    const extent = Math.max(extentX, extentZ);
 
     camera.far = extent * 10 + 50;
     camera.updateProjectionMatrix();
@@ -72,7 +74,8 @@ export function createStage(viewport) {
       floorGrid.geometry.dispose();
       floorGrid.material.dispose();
     }
-    floorGrid = new THREE.GridHelper(floor ?? side + 1, divisions, '#d8d1c5', '#e2ddd4');
+    floorGrid = new THREE.GridHelper(floorX ?? sideX + 1, divisions, '#d8d1c5', '#e2ddd4');
+    floorGrid.scale.z = (floorZ ?? sideZ + 1) / (floorX ?? sideX + 1);
     floorGrid.position.y = 0.001;
     floorGrid.visible = !single;
     scene.add(floorGrid);
@@ -87,7 +90,7 @@ export function createStage(viewport) {
       const preferred = direction.length() * extent * fit;
       const vHalf = THREE.MathUtils.degToRad(camera.fov) / 2;
       const hHalf = Math.atan(Math.tan(vHalf) * available);
-      const fitWidth = (extent * 1.4 * fit) / Math.sin(hHalf);
+      const fitWidth = ((extentX + 0.4 * extentZ) * fit) / Math.sin(hHalf);
       const distance = Math.max(preferred, fitWidth);
       controls.maxDistance = Math.max(controls.maxDistance, distance * 1.5);
       overview.position.copy(direction.normalize().multiplyScalar(distance));

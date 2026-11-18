@@ -5,7 +5,7 @@ import * as registry from '../furniture/registry.js';
 import { createShowroom, rollKey } from './grid.js';
 import { createHelp } from './help.js';
 import { attachKeys } from './keys.js';
-import { ALL_COUNT, ALL_ENTRY, ALL_ID, createScene } from './mix.js';
+import { ALL_COUNT, ALL_ENTRY, ALL_ID, createScene, pluralOf } from './mix.js';
 import { screenshotName, stepIndex } from './nav.js';
 import { canRoll, shortcutGroups } from '../core/item.js';
 import { createPanel } from './panel.js';
@@ -86,7 +86,6 @@ const loaderUi = (() => {
 })();
 
 const kit = createKit({ textureFactory: canvasPatternTexture });
-const pluralOf = (definition) => definition.plural ?? `${definition.label.toLowerCase()}s`;
 let sceneCache = { key: '', scene: null };
 const sceneOf = () => {
   const key = keyOf();
@@ -232,11 +231,12 @@ function reconcile(showroom) {
   showroom.items.forEach((item, index) => {
     const rolls = rollsFor(item.number);
     if (rollKey(rolls) !== item.rollKey) {
-      showroom.rebuild(index, rolls);
+      showroom.rebuild(index, rolls, { deferLayout: true });
       changed++;
     }
   });
   if (changed) {
+    showroom.flushLayout?.();
     showroom.mark(selected, !state.single);
     stage.invalidate({ shadow: true });
   }
@@ -291,6 +291,7 @@ async function populateCurrent({ zoomToItem = false } = {}) {
     gridSize: scene.gridSize,
     count: scene.count,
     spacing: scene.spacing,
+    spacingZ: scene.spacingZ,
     rerolls: state.rerolls,
     animate: motion(),
     ...extra,
@@ -346,7 +347,7 @@ async function generate({ zoomToItem = false } = {}) {
   const scene = sceneOf();
   toolbar.setType(state.type);
   toolbar.setSeed(state.seed);
-  if (state.item && state.item > scene.count) state.item = null;
+  if (state.item && state.item > scene.count && !state.single) state.item = null;
   if (!stage) {
     replaceUrl();
     return;
@@ -403,7 +404,7 @@ function toggleSolo() {
 }
 
 function stepSolo(delta) {
-  const total = sceneOf().count;
+  const total = Math.max(sceneOf().count, state.item ?? 1);
   state.item = ((((state.item ?? 1) - 1 + delta) % total) + total) % total + 1;
   epoch++;
   solo.cancel();
@@ -458,16 +459,18 @@ function escape() {
 }
 
 function stageLayout(scene, single) {
-  if (single) return { side: 0, divisions: 1, scale: scene.spacing / 1.7, single: true };
+  if (single) return { sideX: 0, sideZ: 0, divisions: 1, scale: scene.spacing / 1.7, single: true };
   if (scene.mixed) {
     const { width, depth } = grid.extent;
     const side = width || depth ? Math.max(width, depth) : Math.sqrt(ALL_COUNT) * scene.spacing * 0.6;
     const divisions = Math.ceil((side + 1) / 0.5);
-    return { side, floor: divisions * 0.5, divisions, scale: 1, single: false, fit: 1.12 };
+    return { sideX: side, sideZ: side, floorX: divisions * 0.5, floorZ: divisions * 0.5, divisions, scale: 1, single: false, fit: 1.12 };
   }
   return {
-    side: (scene.gridSize - 1) * scene.spacing,
-    floor: scene.gridSize * scene.spacing,
+    sideX: (scene.gridSize - 1) * scene.spacing,
+    sideZ: (scene.gridSize - 1) * scene.spacingZ,
+    floorX: scene.gridSize * scene.spacing,
+    floorZ: scene.gridSize * scene.spacingZ,
     divisions: scene.gridSize * 4,
     scale: scene.spacing / 1.7,
     single: false,

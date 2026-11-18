@@ -92,5 +92,10 @@ export function createMaterials({ textureFactory = null } = {}) {
     solid(color, roughness = 0.9) {
       return standard({ color, roughness });
     },
+    vertexColor({ roughness = 0.85 } = {}) {
+      const material = standard({ color: '#ffffff', vertexColors: true, roughness });
+      material.userData.role = 'decor';
+      return material;
+    },
   };
 }

@@ -7,10 +7,7 @@ export function attachKeys(handlers) {
     const target = e.target;
 
     if (typing(target)) {
-      if (e.key === 'Escape') {
-        target.blur();
-        handlers.restoreSeed?.();
-      }
+      if (e.key === 'Escape') target.blur();
       return;
     }
 

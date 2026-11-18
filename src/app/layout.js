@@ -63,3 +63,7 @@ export function verticalNeighbor(rows, positions, index, direction) {
   const x = positions[index].x;
   return next.reduce((best, i) => (Math.abs(positions[i].x - x) < Math.abs(positions[best].x - x) ? i : best), next[0]);
 }
+
+export function cellCenter(row, col, center, spacing, spacingZ = spacing) {
+  return { x: (col - center) * spacing, z: (row - center) * spacingZ };
+}
