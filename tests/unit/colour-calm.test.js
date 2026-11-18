@@ -25,6 +25,7 @@ function materialColours(object) {
   object.traverse((node) => {
     for (const m of node.material ? [node.material].flat() : []) {
       if (m.color) out.push([`material ${m.name || m.type}`, `#${m.color.getHexString()}`]);
+      for (const hex of m.userData?.pattern?.colors ?? []) out.push([`pattern ${m.userData.pattern.kind}`, hex]);
     }
   });
   return out;

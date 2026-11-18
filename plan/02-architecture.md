@@ -19,6 +19,7 @@ src/
     rng.js              hashString, mulberry32, createRng (moved verbatim from chair.js)
     color.js            hsl helper, palettes, WOOD_TONES
     materials.js        makeMaterials(palette, textureFactory), patternTexture
+    patterns.js         item-space GLSL patterns (wood, dots, floral, …), grain attribute helpers
     geometry.js         edgeRadius, puffy, strut, tube, extrudeUp, superellipseShape,
                         roundedDiscGeometry, bentBandGeometry, normalizeUVs, lathe helpers
     supports.js         legAnchors, buildLegs, buildCurvyLegs, pedestal, runners, trestle
