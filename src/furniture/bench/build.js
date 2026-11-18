@@ -4,6 +4,7 @@ import {
 } from '../../core/geometry.js';
 import { splitSpan } from '../../core/layout.js';
 import { buildApron, buildLegs, buildStretchers, buildTrestle, legLines, rowAnchors } from '../../core/supports.js';
+import { grainAlong } from '../../core/patterns.js';
 import { buildFramedBack } from './framedBack.js';
 import { strokeShape } from './strokes.js';
 
@@ -21,7 +22,7 @@ function seatSlatsAlongX(p, mats, x0, x1) {
 function sideProfile(shape, thickness, bevel, mat, x) {
   const mesh = new THREE.Mesh(extrudeProfile(shape, thickness, bevel, 'side'), mat);
   mesh.position.x = x;
-  return mesh;
+  return grainAlong(mesh, 'z');
 }
 
 function footCurl(zLeg, yc, rho, dir) {
@@ -192,6 +193,7 @@ export function buildPlank(p, mats) {
   const outline = superellipseShape(p.seatLength / 2 - bevel, p.seatDepth / 2 - bevel, p.seatExponent);
   const seat = new THREE.Mesh(normalizeUVs(extrudeUp(outline, p.seatThickness, bevel), p.seatLength), mats.surface);
   seat.position.y = p.seatHeight - p.seatThickness;
+  grainAlong(seat, 'x');
   const base = { staked: buildStaked, slab: buildSlabEnds, trestle: buildTrestleBase }[p.support];
   return [seat, ...base(p, mats)];
 }

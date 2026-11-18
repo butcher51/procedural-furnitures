@@ -25,10 +25,20 @@ function supportRow(p) {
   return p.support;
 }
 
+function fabricName(f) {
+  if (f.kind === 'linen') return f.texture === 'boucle' ? 'bouclé' : 'linen';
+  return f.kind;
+}
+
+function showSecondary(p) {
+  if (p.seatMaterial === 'wood') return true;
+  return p.seatMaterial === 'fabric' && p.fabricPattern.kind !== 'linen';
+}
+
 function patternRow(p) {
   if (p.seatMaterial === 'painted') return 'painted (solid)';
-  if (p.seatMaterial === 'wood') return p.pattern === 'stripes' ? 'planks' : 'plain grain';
-  return p.pattern === 'stripes' ? `stripes (${p.stripeDirection})` : p.pattern;
+  if (p.seatMaterial === 'wood') return `${p.grain} grain`;
+  return fabricName(p.fabricPattern);
 }
 
 function frameRow(p) {
@@ -69,13 +79,13 @@ export default {
     {
       id: 'pattern',
       label: 'Pattern',
-      fields: ['fabricPattern', 'fabricScale', 'stripeDirection', 'grainPattern', 'grainScale'],
+      fields: ['fabricPattern', 'grain'],
     },
     {
       id: 'finish',
       label: 'Frame',
       reads: ['style', 'palette', 'pattern'],
-      fields: ['seatMaterial', 'woodName', 'seatColor', 'seatSecondary', 'pattern', 'patternScale', 'frameMode', 'frameColor'],
+      fields: ['seatMaterial', 'woodName', 'woodSwatch', 'seatColor', 'seatSecondary', 'frameMode', 'frameColor'],
     },
   ],
 
@@ -85,15 +95,16 @@ export default {
 
   build(p, kit) {
     const m = kit.materials;
+    const wood = () => m.wood(p.woodSwatch, { grain: p.grain, seed: p.seed });
+    let surface;
+    if (p.seatMaterial === 'wood') surface = wood();
+    else if (p.seatMaterial === 'fabric') {
+      const colors = p.fabricPattern.kind === 'linen' ? [p.seatColor] : [p.seatColor, p.seatSecondary];
+      surface = m.pattern({ ...p.fabricPattern, colors, seed: p.seed });
+    } else surface = m.solid(p.seatColor);
     const mats = {
-      surface: m.surface({
-        color: p.seatColor,
-        secondary: p.seatSecondary,
-        pattern: p.pattern,
-        scale: p.patternScale,
-        direction: p.seatMaterial === 'fabric' ? p.stripeDirection : 'horizontal',
-      }),
-      frame: m.frame(p.frameColor, p.frameMode),
+      surface,
+      frame: p.frameMode === 'wood' ? wood() : m.frame(p.frameColor, p.frameMode),
       body: p.style === 'upholstered' ? m.solid(p.bodyColor, 0.9) : null,
     };
     return BUILDERS[p.style](p, mats);
@@ -102,7 +113,7 @@ export default {
   describe(p) {
     const upholstered = p.style === 'upholstered';
     const splayed = p.legSplay > 0.0005;
-    const swatches = [p.seatColor, p.pattern === 'solid' ? null : p.seatSecondary, upholstered ? p.bodyColor : null, p.frameColor].filter(Boolean);
+    const swatches = [p.seatColor, showSecondary(p) ? p.seatSecondary : null, upholstered ? p.bodyColor : null, p.frameColor].filter(Boolean);
     return {
       sections: [
         { group: 'style', rows: [['Style', p.style]] },

@@ -105,3 +105,25 @@ test('geometry invariants, triangles and draw calls over 500 seeds', () => {
   assert.ok(tris[Math.floor(tris.length * 0.95)] <= 6000, `p95 tris ${tris[Math.floor(tris.length * 0.95)]}`);
   assert.ok(tris[tris.length - 1] <= 6000, `max tris ${tris[tris.length - 1]}`);
 });
+
+test('fabric pattern pool: plain textures dominate and kinds are valid', () => {
+  const fabric = all.filter((p) => p.seatMaterial === 'fabric');
+  const name = (p) => (p.fabricPattern.kind === 'linen' ? p.fabricPattern.texture : p.fabricPattern.kind);
+  const kinds = new Set(fabric.map(name));
+  for (const k of ['linen', 'boucle', 'dots', 'gingham', 'ticking', 'herringbone', 'floral']) assert.ok(kinds.has(k), k);
+  const plain = fabric.filter((p) => p.fabricPattern.kind === 'linen').length / fabric.length;
+  assert.ok(plain > 0.55 && plain < 0.75, `plain share ${plain}`);
+});
+
+test('wood seats use a wood grain material with a grain preset', () => {
+  const kit = createKit();
+  for (let n = 1; n <= 100; n++) {
+    const p = generateItem(bench, 'bench-grain', n);
+    assert.ok(['plain', 'fine', 'bold'].includes(p.grain));
+    const object = buildItem(bench, p, kit);
+    const kinds = object.children.map((m) => m.material.userData?.pattern?.kind);
+    if (p.seatMaterial === 'wood') assert.ok(kinds.includes('wood'), `#${n}`);
+    if (p.seatMaterial === 'fabric') assert.ok(kinds.includes(p.fabricPattern.kind), `#${n}`);
+    disposeObject(object);
+  }
+});
