@@ -16,6 +16,7 @@ import { attachToolbar, randomSeed } from './toolbar.js';
 import { createToast } from './toast.js';
 import { readState, writeState } from './url.js';
 import { createView } from './view.js';
+import { createWalk, walkSupported } from './walk.js';
 
 const $ = (id) => document.getElementById(id);
 const viewport = $('viewport');
@@ -450,6 +451,7 @@ function toggleAnimations() {
 function escape() {
   if (help.close()) return;
   if (toolbar.closeMenu()) return;
+  if (walk?.exit()) return;
   if (sheet.collapse()) return;
   if (state.single) {
     toggleSolo();
@@ -518,6 +520,21 @@ const view = createView({
   onReset: () => (zoomed = false),
 });
 
+const walkButton = $('walk');
+const walk = stage && walkSupported()
+  ? createWalk({
+      stage,
+      hint: $('walk-hint'),
+      onChange(active) {
+        viewport.dataset.walk = String(active);
+        walkButton.setAttribute('aria-pressed', String(active));
+        toast.announce(active ? 'Walk mode on' : 'Walk mode off');
+      },
+    })
+  : null;
+walkButton.hidden = !walk;
+walkButton.addEventListener('click', () => walk?.toggle());
+
 stepper.addEventListener('click', (e) => {
   const button = e.target.closest('button');
   if (!button) return;
@@ -528,6 +545,7 @@ stepper.addEventListener('click', (e) => {
 attachKeys({
   help: () => help.toggle(),
   dialogOpen: () => help.isOpen,
+  walking: () => Boolean(walk?.active),
   type: (digit) => (digit === 0 ? switchType(ALL_ID) : types[digit - 1] && switchType(types[digit - 1].id)),
   step,
   regenerate: () => setSeed(randomSeed()),
@@ -574,13 +592,13 @@ if (stage) {
   attachPicking({
     renderer: stage.renderer,
     camera: stage.camera,
-    getObjects: () => (state.single || !grid ? [] : grid.items.filter((item) => item.object.visible).map((item) => item.object)),
+    getObjects: () => (state.single || !grid || walk?.active ? [] : grid.items.filter((item) => item.object.visible).map((item) => item.object)),
     onSelect: (index) => select(index),
     onZoom(index) {
       select(index);
       focusSelected();
     },
-    onFloor: resetCamera,
+    onFloor: () => walk?.active || resetCamera(),
   });
 
   stage.controls.addEventListener('start', () => {
@@ -591,6 +609,7 @@ if (stage) {
   stage.renderer.setAnimationLoop((now) => {
     const growing = grid.tick(now);
     const growingSolo = solo.tick(now);
+    if (walk?.tick(now)) stage.invalidate();
     stage.frame(now, growing || growingSolo);
   });
 }
