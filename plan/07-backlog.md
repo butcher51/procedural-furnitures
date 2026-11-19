@@ -107,6 +107,16 @@ Same shape as M2 + M3. These kit additions come first and are architect-led:
 | 6.3 | Ensemble view in UI | ux-designer → ui-engineer |
 | 6.4 | Room mode (stretch) | – |
 
+## M7 — Immersive showroom (WebXR VR + first-person walk)
+
+| # | Task | Agent | Depends |
+|---|---|---|---|
+| 7.1 | UX spec: icon-only VR button top right (hidden or disabled when `navigator.xr` lacks `immersive-vr`), FPV toggle, controls hint, phone behaviour; extend `specs/ui.md` + mockup | ux-designer | M3 |
+| 7.2 | WebXR VR: `renderer.xr.enabled`, `setAnimationLoop`, session start/end from the icon button, showroom at real-world scale with floor at y = 0, controller teleport/snap-turn | ui-engineer | 7.1 |
+| 7.3 | FPV mode: walk the showroom like a store (WASD/arrows + pointer-lock mouse look on desktop, touch joystick on phone), eye height ~1.6 m, collision with item footprints, URL `view=walk` | ui-engineer | 7.1 |
+| 7.4 | Perf pass for VR/FPV (stereo 72–90 fps budget, LOD or reduced grid if needed) + Playwright smoke test that FPV loads and the VR button degrades gracefully without XR | test-engineer | 7.2, 7.3 |
+| 7.5 | ★ Human approval (test on a headset) | you | 7.4 |
+
 ## Nice-to-haves (unscheduled)
 
 - Export the selected item as GLB (`GLTFExporter`)
