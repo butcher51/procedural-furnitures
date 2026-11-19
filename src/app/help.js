@@ -12,6 +12,7 @@ const ROWS = [
   ['F', 'Fullscreen'],
   ['P', 'Screenshot PNG'],
   ['/', 'Focus seed'],
+  ['W A S D', 'Walk mode: move (Space jumps, Shift runs, C crouches)'],
   ['?', 'This card'],
 ];
 

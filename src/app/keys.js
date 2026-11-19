@@ -11,6 +11,11 @@ export function attachKeys(handlers) {
       return;
     }
 
+    if (handlers.walking()) {
+      if (e.key === 'Escape') handlers.escape();
+      return;
+    }
+
     if (e.key === '?') {
       e.preventDefault();
       handlers.help();

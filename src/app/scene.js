@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 const EASE_MS = 300;
+const WALK_FOV = 70;
 
 const cssColor = (name, fallback) =>
   getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
@@ -46,7 +47,20 @@ export function createStage(viewport) {
   let inset = 0;
   let insetLeft = 0;
   let animateMoves = true;
+  let walking = false;
   const overview = { position: new THREE.Vector3(), target: new THREE.Vector3() };
+  const parked = { position: new THREE.Vector3(), target: new THREE.Vector3(), fov: camera.fov };
+  const walkArea = { halfX: 10, halfZ: 10, spawnZ: 3 };
+
+  function placeCamera(position, target) {
+    if (walking) {
+      parked.position.copy(position);
+      parked.target.copy(target);
+      return;
+    }
+    camera.position.copy(position);
+    controls.target.copy(target);
+  }
 
   const invalidate = ({ shadow = false } = {}) => {
     dirty = true;
@@ -68,6 +82,9 @@ export function createStage(viewport) {
 
     const groundSize = Math.max(extent * 8, 20);
     ground.scale.set(groundSize, groundSize, 1);
+    walkArea.halfX = groundSize / 2 - 0.5;
+    walkArea.halfZ = groundSize / 2 - 0.5;
+    walkArea.spawnZ = single ? 2.4 * scale : Math.max(sideZ, 0) / 2 + 3;
 
     if (floorGrid) {
       scene.remove(floorGrid);
@@ -97,8 +114,7 @@ export function createStage(viewport) {
       overview.target.set(0, 0.3, 0);
     }
     tween = null;
-    camera.position.copy(overview.position);
-    controls.target.copy(overview.target);
+    placeCamera(overview.position, overview.target);
     invalidate({ shadow: true });
   }
 
@@ -119,16 +135,14 @@ export function createStage(viewport) {
     overview.position.copy(sphere.center).addScaledVector(direction, distance);
     controls.maxDistance = Math.max(controls.maxDistance, distance * 3);
     tween = null;
-    camera.position.copy(overview.position);
-    controls.target.copy(overview.target);
+    placeCamera(overview.position, overview.target);
     invalidate({ shadow: true });
   }
 
   function moveTo(position, target) {
-    if (!animateMoves) {
+    if (!animateMoves || walking) {
       tween = null;
-      camera.position.copy(position);
-      controls.target.copy(target);
+      placeCamera(position, target);
       invalidate();
       return;
     }
@@ -154,7 +168,7 @@ export function createStage(viewport) {
 
   function applyViewOffset() {
     const { clientWidth: w, clientHeight: h } = viewport;
-    if ((inset > 0 || insetLeft > 0) && w > 0) camera.setViewOffset(w, h, -insetLeft / 2, inset / 2, w, h);
+    if (!walking && (inset > 0 || insetLeft > 0) && w > 0) camera.setViewOffset(w, h, -insetLeft / 2, inset / 2, w, h);
     else camera.clearViewOffset();
     camera.updateProjectionMatrix();
   }
@@ -195,7 +209,7 @@ export function createStage(viewport) {
       if (t === 1) tween = null;
       active = true;
     }
-    if (controls.update()) active = true;
+    if (!walking && controls.update()) active = true;
     if (!active) return false;
     if (animating || shadowDirty) {
       renderer.shadowMap.needsUpdate = true;
@@ -204,6 +218,30 @@ export function createStage(viewport) {
     renderer.render(scene, camera);
     dirty = false;
     return true;
+  }
+
+  function enterWalk() {
+    walking = true;
+    tween = null;
+    parked.position.copy(camera.position);
+    parked.target.copy(controls.target);
+    parked.fov = camera.fov;
+    controls.enabled = false;
+    camera.fov = WALK_FOV;
+    applyViewOffset();
+    invalidate();
+    return { x: 0, z: walkArea.spawnZ, yaw: 0 };
+  }
+
+  function exitWalk() {
+    walking = false;
+    camera.fov = parked.fov;
+    camera.position.copy(parked.position);
+    controls.target.copy(parked.target);
+    camera.lookAt(parked.target);
+    controls.enabled = true;
+    applyViewOffset();
+    invalidate();
   }
 
   function renderNow() {
@@ -226,6 +264,9 @@ export function createStage(viewport) {
     frame,
     renderNow,
     invalidate,
+    enterWalk,
+    exitWalk,
+    walkArea,
     setAnimateMoves(value) {
       animateMoves = value;
     },
